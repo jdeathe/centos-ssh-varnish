@@ -1,7 +1,7 @@
 centos-ssh-varnish
 ==================
 
-Docker Image including CentOS-6, Varnis 3.0.
+Docker Image including CentOS-6 and Varnish Cache 3.0.
 
 The Dockerfile can be used to build a base image that can be run as-is or used as the bases for other more specific builds.
 
