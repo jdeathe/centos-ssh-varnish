@@ -45,10 +45,10 @@ ExecStartPre=/bin/sudo /bin/bash -c \
 # Initialisation: Pull or build image if required
 ExecStartPre=/bin/sudo /bin/bash -c \
   "if [ ! \"jdeathe/centos-ssh-varnish\" == \"$(/usr/bin/docker images | /bin/grep -e '^jdeathe/centos-ssh-varnish[ ]\{1,\}' | /bin/grep -o 'jdeathe/centos-ssh-varnish')\" ]; then \
-    if [ -f /var/services-packages/jdeathe/centos-ssh-varnish.centos-6-1.0.1.tar.xz ]; then \
-      /usr/bin/xz -dc /var/services-packages/jdeathe/centos-ssh-varnish.centos-6-1.0.1.tar.xz | /usr/bin/docker load; \
+    if [ -f /var/services-packages/jdeathe/centos-ssh-varnish.centos-6-1.0.0.tar.xz ]; then \
+      /usr/bin/xz -dc /var/services-packages/jdeathe/centos-ssh-varnish.centos-6-1.0.0.tar.xz | /usr/bin/docker load; \
     else \
-      /usr/bin/docker pull jdeathe/centos-ssh-varnish:centos-6-1.0.1; \
+      /usr/bin/docker pull jdeathe/centos-ssh-varnish:centos-6-1.0.0; \
     fi; \
   fi"
 
