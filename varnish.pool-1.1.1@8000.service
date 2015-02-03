@@ -70,7 +70,7 @@ ExecStart=/bin/sudo /bin/bash -c \
     --add-host backend-3:172.17.8.103 \
     --add-host backend-4:172.17.8.104 \
     --volumes-from volume-config.%p \
-    jdeathe/centos-ssh-varnish:centos-6-1.0.1"
+    jdeathe/centos-ssh-varnish:centos-6-1.0.0"
 
 ExecStartPost=/usr/bin/etcdctl set /services/varnish/pool-1/1.1 %H:%i
 
