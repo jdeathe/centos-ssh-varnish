@@ -137,7 +137,7 @@ sub vcl_recv {
 	# app-n || app-n.local hosts
 	if (req.http.host ~ "^app-[0-9]+(\.local)?(:8[05][0-7][0-9])?$") {
 		# Make host domain consistent so only cached once: (app-1 -> app-1.local)
-		set req.http.host = regsub(req.http.host, "^((app-[0-9]+)(:\d))?", "\2.local\3");
+		set req.http.host = regsub(req.http.host, "^(app-[0-9]+)(\.local)?(:\d{4})?", "\1.local\3");
 
 		remove req.http.X-Forwarded-Port;
 		set req.http.X-Forwarded-Port = server.port;
