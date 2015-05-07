@@ -1,15 +1,19 @@
 centos-ssh-varnish
 ==================
 
-Docker Image including CentOS-6 and Varnish Cache 3.0.
+Docker Image including CentOS-6 6.6 x86_64 and Varnish Cache 3.0.
 
-The Dockerfile can be used to build a base image that can be run as-is or used as the bases for other more specific builds.
+Supports custom configuration via a configuration data volume.
+
+## Overview & links
+
+The [Dockerfile](https://github.com/jdeathe/centos-ssh-varnish/blob/master/Dockerfile) can be used to build a base image that can be run as-is or used as the bases for other more specific builds.
 
 Included in the build is the EPEL repository and SSH, vi and MySQL are installed along with python-pip, supervisor and supervisor-stdout.
 
 [Supervisor](http://supervisord.org/) is used to start varnishd (and optionally the sshd) daemon when a docker container based on this image is run. To enable simple viewing of stdout for the sshd subprocess, supervisor-stdout is included. This allows you to see output from the supervisord controlled subprocesses with `docker logs <docker-container-name>`.
 
-SSH is not required in order to access a terminal for the running container the prefered method is to use Command Keys and the nsenter command. See [command-keys.md](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/command-keys.md) for details on how to set this up.
+SSH is not required in order to access a terminal for the running container the prefered method is to use Command Keys and the nsenter command. See [command-keys.md](https://github.com/jdeathe/centos-ssh-varnish/blob/master/command-keys.md) for details on how to set this up.
 
 If enabling and configuring SSH access, it is by public key authentication and, by default, the [Vagrant](http://www.vagrantup.com/) [insecure private key](https://github.com/mitchellh/vagrant/blob/master/keys/vagrant) is required.
 
@@ -62,7 +66,7 @@ Each service that requires a common set of configuration files should use a sing
 
 ```
 
-Make a directory on the docker host for storing container configuration files. This directory needs to contain everything from the directory [etc/services-config](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/etc/services-config)
+Make a directory on the docker host for storing container configuration files. This directory needs to contain everything from the directory [etc/services-config](https://github.com/jdeathe/centos-ssh-varnish/blob/master/etc/services-config)
 
 ```
 $ mkdir -p /etc/services-config/varnish.pool-1.1.1
@@ -93,7 +97,7 @@ $ docker run \
 
 ### Running
 
-To run the a docker container from this image you can use the included [run.sh](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/run.sh) and [run.conf](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/run.conf) scripts. The helper script will stop any running container of the same name, remove it and run a new daemonised container on an unspecified host port. Alternatively you can use the following to make the service available on port 8000 of the docker host. 4 backend hosts are defined with the IP range 172.17.8.101 - 172.17.8.104.
+To run the a docker container from this image you can use the included [run.sh](https://github.com/jdeathe/centos-ssh-varnish/blob/master/run.sh) and [run.conf](https://github.com/jdeathe/centos-ssh-varnish/blob/master/run.conf) scripts. The helper script will stop any running container of the same name, remove it and run a new daemonised container on an unspecified host port. Alternatively you can use the following to make the service available on port 8000 of the docker host. 4 backend hosts are defined with the IP range 172.17.8.101 - 172.17.8.104.
 
 ```
 $ docker stop varnish.pool-1.1.1 && \
@@ -120,10 +124,10 @@ $ docker logs varnish.pool-1.1.1
 
 If using the optional data volume for container configuration you are able to customise the configuration. In the following examples your custom docker configuration files should be located on the Docker host under the directory ```/etc/service-config/<container-name>/``` where ```<container-name>``` should match the applicable container name such as "varnish.pool-1.1.1" in the examples.
 
-#### [varnish/docker-default.vcl](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/etc/services-config/varnish/docker-default.vcl)
+#### [varnish/docker-default.vcl](https://github.com/jdeathe/centos-ssh-varnish/blob/master/etc/services-config/varnish/docker-default.vcl)
 
 Varnish can be configured via the docker-default.vcl.
 
-#### [supervisor/supervisord.conf](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/etc/services-config/supervisor/supervisord.conf)
+#### [supervisor/supervisord.conf](https://github.com/jdeathe/centos-ssh-varnish/blob/master/etc/services-config/supervisor/supervisord.conf)
 
 The supervisor service's configuration can also be overriden by editing the custom supervisord.conf file. It shouldn't be necessary to change the existing configuration here but you could include more [program:x] sections to run additional commands at startup.
