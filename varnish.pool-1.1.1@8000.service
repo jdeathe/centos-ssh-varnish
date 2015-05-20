@@ -45,10 +45,10 @@ ExecStartPre=/bin/sudo /bin/bash -c \
 # Initialisation: Pull or build image if required
 ExecStartPre=/bin/sudo /bin/bash -c \
   "if [ ! \"jdeathe/centos-ssh-varnish\" == \"$(/usr/bin/docker images | /bin/grep -e '^jdeathe/centos-ssh-varnish[ ]\{1,\}' | /bin/grep -o 'jdeathe/centos-ssh-varnish')\" ]; then \
-    if [ -f /var/services-packages/jdeathe/centos-ssh-varnish.centos-6-1.0.0.tar.xz ]; then \
-      /usr/bin/xz -dc /var/services-packages/jdeathe/centos-ssh-varnish.centos-6-1.0.0.tar.xz | /usr/bin/docker load; \
+    if [ -f /var/services-packages/jdeathe/centos-ssh-varnish.centos-6-1.1.0.tar.xz ]; then \
+      /usr/bin/xz -dc /var/services-packages/jdeathe/centos-ssh-varnish.centos-6-1.1.0.tar.xz | /usr/bin/docker load; \
     else \
-      /usr/bin/docker pull jdeathe/centos-ssh-varnish:centos-6-1.0.0; \
+      /usr/bin/docker pull jdeathe/centos-ssh-varnish:centos-6-1.1.0; \
     fi; \
   fi"
 
@@ -70,7 +70,7 @@ ExecStart=/bin/sudo /bin/bash -c \
     --add-host backend-3:172.17.8.103 \
     --add-host backend-4:172.17.8.104 \
     --volumes-from volume-config.%p \
-    jdeathe/centos-ssh-varnish:centos-6-1.0.0"
+    jdeathe/centos-ssh-varnish:centos-6-1.1.0"
 
 ExecStartPost=/usr/bin/etcdctl set /services/varnish/pool-1/1.1 %H:%i
 
