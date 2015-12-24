@@ -19,7 +19,7 @@ OPTS_BACKEND_HOST_9="${BACKEND_HOST_9:-172.17.8.109}"
 
 have_docker_container_name ()
 {
-	NAME=$1
+	local NAME=$1
 
 	if [[ -n $(docker ps -a | grep -v -e "${NAME}/.*,.*" | grep -o ${NAME}) ]]; then
 		return 0
@@ -30,7 +30,7 @@ have_docker_container_name ()
 
 is_docker_container_name_running ()
 {
-	NAME=$1
+	local NAME=$1
 
 	if [[ -n $(docker ps | grep -v -e "${NAME}/.*,.*" | grep -o ${NAME}) ]]; then
 		return 0
@@ -41,7 +41,7 @@ is_docker_container_name_running ()
 
 remove_docker_container_name ()
 {
-	NAME=$1
+	local NAME=$1
 
 	if have_docker_container_name ${NAME} ; then
 		if is_docker_container_name_running ${NAME} ; then
