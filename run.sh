@@ -21,7 +21,7 @@ have_docker_container_name ()
 {
 	local NAME=$1
 
-	if [[ -n $(docker ps -a | grep -v -e "${NAME}/.*,.*" | grep -o ${NAME}) ]]; then
+	if [[ -n $(docker ps -a | awk -v pattern="^${NAME}$" '$NF ~ pattern { print $NF; }') ]]; then
 		return 0
 	else
 		return 1
@@ -32,7 +32,7 @@ is_docker_container_name_running ()
 {
 	local NAME=$1
 
-	if [[ -n $(docker ps | grep -v -e "${NAME}/.*,.*" | grep -o ${NAME}) ]]; then
+	if [[ -n $(docker ps | awk -v pattern="^${NAME}$" '$NF ~ pattern { print $NF; }') ]]; then
 		return 0
 	else
 		return 1
