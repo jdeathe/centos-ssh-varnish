@@ -10,12 +10,6 @@ source run.conf
 OPTS_BACKEND_HOST_1="${BACKEND_HOST_1:-172.17.8.101}"
 OPTS_BACKEND_HOST_2="${BACKEND_HOST_2:-172.17.8.102}"
 OPTS_BACKEND_HOST_3="${BACKEND_HOST_3:-172.17.8.103}"
-OPTS_BACKEND_HOST_4="${BACKEND_HOST_4:-172.17.8.104}"
-OPTS_BACKEND_HOST_5="${BACKEND_HOST_5:-172.17.8.105}"
-OPTS_BACKEND_HOST_6="${BACKEND_HOST_6:-172.17.8.106}"
-OPTS_BACKEND_HOST_7="${BACKEND_HOST_7:-172.17.8.107}"
-OPTS_BACKEND_HOST_8="${BACKEND_HOST_8:-172.17.8.108}"
-OPTS_BACKEND_HOST_9="${BACKEND_HOST_9:-172.17.8.109}"
 
 have_docker_container_name ()
 {
@@ -119,7 +113,6 @@ docker run \
 	--add-host backend-1:${OPTS_BACKEND_HOST_1} \
 	--add-host backend-2:${OPTS_BACKEND_HOST_2} \
 	--add-host backend-3:${OPTS_BACKEND_HOST_3} \
-	--add-host backend-4:${OPTS_BACKEND_HOST_4} \
 	--volumes-from ${VOLUME_CONFIG_NAME} \
 	${DOCKER_IMAGE_REPOSITORY_NAME}
 )
@@ -134,6 +127,10 @@ docker run \
 # 	-p 8000:80 \
 # 	-p 8500:8443 \
 # 	--env VARNISH_STORAGE=malloc,256M \
+# 	--add-host backend-1:${OPTS_BACKEND_HOST_1} \
+# 	--add-host backend-2:${OPTS_BACKEND_HOST_2} \
+# 	--add-host backend-3:${OPTS_BACKEND_HOST_3} \
+# 	--volumes-from ${VOLUME_CONFIG_NAME} \
 # 	${DOCKER_IMAGE_REPOSITORY_NAME}
 # )
 
