@@ -53,6 +53,57 @@ remove_docker_container_name ()
 	fi
 }
 
+# Configuration volume
+if ! have_docker_container_name ${VOLUME_CONFIG_NAME} ; then
+
+	# For configuration that is specific to the running container
+	CONTAINER_MOUNT_PATH_CONFIG=${MOUNT_PATH_CONFIG}/${DOCKER_NAME}
+
+	# For configuration that is shared across a group of containers
+	CONTAINER_MOUNT_PATH_CONFIG_SHARED_SSH=${MOUNT_PATH_CONFIG}/ssh.${SERVICE_UNIT_SHARED_GROUP}
+
+	if [ ! -d ${CONTAINER_MOUNT_PATH_CONFIG_SHARED_SSH}/ssh ]; then
+		CMD=$(mkdir -p ${CONTAINER_MOUNT_PATH_CONFIG_SHARED_SSH}/ssh)
+		$CMD || sudo $CMD
+	fi
+
+	# Configuration for SSH is from jdeathe/centos-ssh/etc/services-config/ssh
+	#if [[ ! -n $(find ${CONTAINER_MOUNT_PATH_CONFIG_SHARED_SSH}/ssh -maxdepth 1 -type f) ]]; then
+	#		CMD=$(cp -R etc/services-config/ssh/ ${CONTAINER_MOUNT_PATH_CONFIG_SHARED_SSH}/ssh/)
+	#		$CMD || sudo $CMD
+	#fi
+
+	if [ ! -d ${CONTAINER_MOUNT_PATH_CONFIG}/supervisor ]; then
+		CMD=$(mkdir -p ${CONTAINER_MOUNT_PATH_CONFIG}/supervisor)
+		$CMD || sudo $CMD
+	fi
+
+	if [[ ! -n $(find ${CONTAINER_MOUNT_PATH_CONFIG}/supervisor -maxdepth 1 -type f) ]]; then
+		CMD=$(cp -R etc/services-config/supervisor ${CONTAINER_MOUNT_PATH_CONFIG}/)
+		$CMD || sudo $CMD
+	fi
+
+	if [ ! -d ${CONTAINER_MOUNT_PATH_CONFIG}/varnish ]; then
+		CMD=$(mkdir -p ${CONTAINER_MOUNT_PATH_CONFIG}/varnish)
+		$CMD || sudo $CMD
+	fi
+
+	if [[ ! -n $(find ${CONTAINER_MOUNT_PATH_CONFIG}/varnish -maxdepth 1 -type f) ]]; then
+		CMD=$(cp -R etc/services-config/varnish ${CONTAINER_MOUNT_PATH_CONFIG}/)
+		$CMD || sudo $CMD
+	fi
+(
+set -x
+docker run \
+	--name ${VOLUME_CONFIG_NAME} \
+	-v ${CONTAINER_MOUNT_PATH_CONFIG_SHARED_SSH}/ssh:/etc/services-config/ssh \
+	-v ${CONTAINER_MOUNT_PATH_CONFIG}/supervisor:/etc/services-config/supervisor \
+	-v ${CONTAINER_MOUNT_PATH_CONFIG}/varnish:/etc/services-config/varnish \
+	busybox:latest \
+	/bin/true;
+)
+fi
+
 # Force replace container of same name if found to exist
 remove_docker_container_name ${DOCKER_NAME}
 
@@ -69,6 +120,7 @@ docker run \
 	--add-host backend-2:${OPTS_BACKEND_HOST_2} \
 	--add-host backend-3:${OPTS_BACKEND_HOST_3} \
 	--add-host backend-4:${OPTS_BACKEND_HOST_4} \
+	--volumes-from ${VOLUME_CONFIG_NAME} \
 	${DOCKER_IMAGE_REPOSITORY_NAME}
 )
 
