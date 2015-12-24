@@ -59,7 +59,7 @@ remove_docker_container_name ${DOCKER_NAME}
 # In a sub-shell set xtrace - prints the docker command to screen for reference
 (
 set -x
-sudo docker run \
+docker run \
 	-d \
 	--privileged \
 	--name ${DOCKER_NAME} \
