@@ -9,7 +9,9 @@
 #	docker run -d --privileged --name varnish.pool-1.1.1 \
 #		-p 8000:80 -p 8500:8443 \
 #		jdeathe/centos-ssh-varnish:latest
-# ACCESS: 
+# ACCESS:
+#   docker exec -it varnish.pool-1.1.1 bash
+# ALTERNATIVE ACCESS:
 #	sudo /usr/bin/nsenter -m -u -i -n -p -t $(/usr/bin/docker inspect \
 #		--format '{{ .State.Pid }}' varnish.pool-1.1.1) /bin/bash
 # =============================================================================

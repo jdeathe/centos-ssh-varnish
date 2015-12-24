@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-DIR_PATH="$( cd "$( echo "${0%/*}" )"; pwd )"
-if [[ $DIR_PATH == */* ]]; then
+DIR_PATH="$( if [ "$( echo "${0%/*}" )" != "$( echo "${0}" )" ] ; then cd "$( echo "${0%/*}" )"; fi; pwd )"
+if [[ $DIR_PATH == */* ]] && [[ $DIR_PATH != "$( pwd )" ]] ; then
 	cd $DIR_PATH
 fi
 
@@ -19,9 +19,9 @@ OPTS_BACKEND_HOST_9="${BACKEND_HOST_9:-172.17.8.109}"
 
 have_docker_container_name ()
 {
-	NAME=$1
+	local NAME=$1
 
-	if [[ -n $(docker ps -a | grep -v -e "${NAME}/.*,.*" | grep -o ${NAME}) ]]; then
+	if [[ -n $(docker ps -a | awk -v pattern="^${NAME}$" '$NF ~ pattern { print $NF; }') ]]; then
 		return 0
 	else
 		return 1
@@ -30,9 +30,9 @@ have_docker_container_name ()
 
 is_docker_container_name_running ()
 {
-	NAME=$1
+	local NAME=$1
 
-	if [[ -n $(docker ps | grep -v -e "${NAME}/.*,.*" | grep -o ${NAME}) ]]; then
+	if [[ -n $(docker ps | awk -v pattern="^${NAME}$" '$NF ~ pattern { print $NF; }') ]]; then
 		return 0
 	else
 		return 1
@@ -41,7 +41,7 @@ is_docker_container_name_running ()
 
 remove_docker_container_name ()
 {
-	NAME=$1
+	local NAME=$1
 
 	if have_docker_container_name ${NAME} ; then
 		if is_docker_container_name_running ${NAME} ; then
