@@ -7,10 +7,6 @@ fi
 
 source run.conf
 
-OPTS_BACKEND_HOST_1="${BACKEND_HOST_1:-172.17.8.101}"
-OPTS_BACKEND_HOST_2="${BACKEND_HOST_2:-172.17.8.102}"
-OPTS_BACKEND_HOST_3="${BACKEND_HOST_3:-172.17.8.103}"
-
 have_docker_container_name ()
 {
 	local NAME=$1
@@ -46,6 +42,46 @@ remove_docker_container_name ()
 		(docker rm ${NAME})
 	fi
 }
+
+# Set the --add-host parameters
+DOCKER_HOST_TYPE=${DOCKER_HOST_TYPE:-default}
+ADD_BACKEND_HOSTS=
+
+case ${DOCKER_HOST_TYPE} in
+	cluster)
+		if [[ ${VARNISH_VCL_CONF} == /etc/varnish/docker-cluster.vcl ]]; then
+			echo Running Varnish with 3 backend cluster nodes.
+			ADD_BACKEND_HOSTS="--add-host backend-1:${DOCKER_HOST_IP_CLUSTER_01} \
+								--add-host backend-2:${DOCKER_HOST_IP_CLUSTER_02} \
+								--add-host backend-3:${DOCKER_HOST_IP_CLUSTER_03}"
+		else
+			echo Running Varnish with 1 backend cluster node.
+			ADD_BACKEND_HOSTS="--add-host backend-1:${DOCKER_HOST_IP_CLUSTER_01}"
+		fi
+		;;
+	*)
+		echo Running Varnish with 1 backend node.
+
+		# Fail if attempting to use the wrong Varnish VCL configuration.
+		if [[ ${VARNISH_VCL_CONF} == /etc/varnish/docker-cluster.vcl ]]; then
+			echo ERROR: Varnish configuration docker-cluster.vcl requires DOCKER_HOST_TYPE=cluster
+			exit 1
+		fi
+
+		DOCKER_HOST_IP=
+		if [[ ${DOCKER_HOST} != "" ]]; then
+			DOCKER_HOST_IP=$(echo ${DOCKER_HOST} | grep -oE "[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}")
+		fi
+
+		if [[ ${DOCKER_HOST_IP} != "" ]] && [[ ${DOCKER_HOST_IP} != ${DOCKER_HOST_IP_DEFAULT} ]]; then
+			echo Found non-standard DOCKER_HOST defined.
+			echo Using ${DOCKER_HOST_IP} instead of ${DOCKER_HOST_IP_DEFAULT} for backend-1.
+			ADD_BACKEND_HOSTS="--add-host backend-1:${DOCKER_HOST_IP}"
+		else
+			ADD_BACKEND_HOSTS="--add-host backend-1:${DOCKER_HOST_IP_DEFAULT}"
+		fi
+		;;
+esac
 
 # Configuration volume
 if ! have_docker_container_name ${VOLUME_CONFIG_NAME} ; then
@@ -110,29 +146,12 @@ docker run \
 	--name ${DOCKER_NAME} \
 	-p 8000:80 \
 	-p 8500:8443 \
-	--add-host backend-1:${OPTS_BACKEND_HOST_1} \
-	--add-host backend-2:${OPTS_BACKEND_HOST_2} \
-	--add-host backend-3:${OPTS_BACKEND_HOST_3} \
+	--env "VARNISH_VCL_CONF=${VARNISH_VCL_CONF}" \
+	--env "VARNISH_STORAGE=${VARNISH_STORAGE}" \
+	${ADD_BACKEND_HOSTS} \
 	--volumes-from ${VOLUME_CONFIG_NAME} \
 	${DOCKER_IMAGE_REPOSITORY_NAME}
 )
-
-# Example: Override the storage settings to use memory instead of disk based cache
-# (
-# set -x
-# sudo docker run \
-# 	-d \
-#   --privileged \
-# 	--name ${DOCKER_NAME} \
-# 	-p 8000:80 \
-# 	-p 8500:8443 \
-# 	--env VARNISH_STORAGE=malloc,256M \
-# 	--add-host backend-1:${OPTS_BACKEND_HOST_1} \
-# 	--add-host backend-2:${OPTS_BACKEND_HOST_2} \
-# 	--add-host backend-3:${OPTS_BACKEND_HOST_3} \
-# 	--volumes-from ${VOLUME_CONFIG_NAME} \
-# 	${DOCKER_IMAGE_REPOSITORY_NAME}
-# )
 
 if is_docker_container_name_running ${DOCKER_NAME} ; then
 	docker ps | grep -v -e "${DOCKER_NAME}/.*,.*" | grep ${DOCKER_NAME}
