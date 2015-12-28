@@ -5,6 +5,8 @@ if [[ $DIR_PATH == */* ]] && [[ $DIR_PATH != "$( pwd )" ]] ; then
 	cd $DIR_PATH
 fi
 
+COREOS_PRIVATE_IPV4=${COREOS_PRIVATE_IPV4:-$(grep 'COREOS_PRIVATE_IPV4=' /etc/environment | sed 's~COREOS_PRIVATE_IPV4=~~g')}
+
 have_docker_container_name ()
 {
 	local NAME=$1
@@ -72,6 +74,9 @@ remove_docker_container_name volume-config.${OPT_SERVICE_NAME_SHORT}
 remove_docker_container_name ${OPT_SERVICE_NAME_SHORT}
 
 sudo cp ${OPT_SERVICE_NAME_FULL} /etc/systemd/system/
+if [[ ${COREOS_PRIVATE_IPV4} != "" ]]; then
+	sudo sed -i "s~ backend-1:172.17.8.101~ backend-1:${COREOS_PRIVATE_IPV4}~g" /etc/systemd/system/${OPT_SERVICE_NAME_FULL}
+fi
 sudo systemctl daemon-reload
 sudo systemctl enable /etc/systemd/system/${OPT_SERVICE_NAME_FULL}
 
