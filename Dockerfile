@@ -24,7 +24,9 @@ MAINTAINER James Deathe <james.deathe@gmail.com>
 # -----------------------------------------------------------------------------
 RUN rpm --nosignature -Uvh http://repo.varnish-cache.org/redhat/varnish-3.0/el6/noarch/varnish-release/varnish-release-3.0-1.el6.noarch.rpm \
 	&& yum --setopt=tsflags=nodocs -y install \
-	varnish \
+	varnish-3.0.7-1.el6 \
+	&& yum versionlock add \
+	varnish* \
 	&& rm -rf /var/cache/yum/* \
 	&& yum clean all
 
