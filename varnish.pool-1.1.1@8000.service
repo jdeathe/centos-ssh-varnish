@@ -32,7 +32,7 @@ TimeoutStartSec=60
 Environment="MOUNT_PATH_CONFIG=/etc/services-config"
 Environment="MOUNT_PATH_DATA=/var/services-data"
 Environment="DOCKER_IMAGE_NAME=jdeathe/centos-ssh-varnish"
-Environment="DOCKER_IMAGE_TAG=centos-6-1.1.0"
+Environment="DOCKER_IMAGE_TAG=centos-6-1.2.0"
 # Set the public IP addresses for the backend host server.
 Environment="ADD_BACKEND_HOSTS=--add-host backend-1:172.17.8.101"
 # Uncomment and set the public IP addresses for the backend host servers if
