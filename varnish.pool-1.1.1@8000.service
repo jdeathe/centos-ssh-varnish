@@ -9,6 +9,7 @@
 #     cp <container-path>/etc/services-config/varnish/docker-default.vcl /etc/services-config/<service-name>/varnish/docker-default.vcl 
 #
 # To install: 
+#     Edit ADD_BACKEND_HOSTS with the public IP addresses of the backend docker host(s).
 #     sudo cp <container-path>/<service-name>@<port>.service /etc/systemd/system/
 #     sudo systemctl daemon-reload
 #     sudo systemctl enable /etc/systemd/system/<service-name>@<port>.service
@@ -32,10 +33,24 @@ Environment="MOUNT_PATH_CONFIG=/etc/services-config"
 Environment="MOUNT_PATH_DATA=/var/services-data"
 Environment="DOCKER_IMAGE_NAME=jdeathe/centos-ssh-varnish"
 Environment="DOCKER_IMAGE_TAG=centos-6-1.1.0"
-Environment="ADD_BACKEND_HOSTS=--add-host backend-1:172.17.8.101 \
-                               --add-host backend-2:172.17.8.102 \
-                               --add-host backend-3:172.17.8.103 \
-"
+# Set the public IP addresses for the backend host server.
+Environment="ADD_BACKEND_HOSTS=--add-host backend-1:172.17.8.101"
+# Uncomment and set the public IP addresses for the backend host servers if
+# using the 3 node clust configuration.
+# Environment="ADD_BACKEND_HOSTS=--add-host backend-1:172.17.8.101 \
+#                                --add-host backend-2:172.17.8.102 \
+#                                --add-host backend-3:172.17.8.103 \
+# "
+Environment="VARNISH_STORAGE=file,/var/lib/varnish/varnish_storage.bin,1G"
+# Uncomment 1 of the below to override the storage settings and use memory 
+# instead of disk based cache.
+#Environment="VARNISH_STORAGE=malloc,256M"
+#Environment="VARNISH_STORAGE=malloc,1024M"
+
+Environment="VARNISH_VCL_CONF=/etc/varnish/docker-default.vcl"
+# Uncomment below to use the cluster configuration. 
+# Requires 3 backend host nodes.
+#Environment="VARNISH_VCL_CONF=/etc/varnish/docker-cluster.vcl"
 
 
 # Create a data container for the configuration volume
@@ -83,6 +98,8 @@ ExecStart=/bin/sudo /bin/bash -c \
       --name %p \
       -p %i:80 \
       -p 8500:8443 \
+      --env \"VARNISH_VCL_CONF=${VARNISH_VCL_CONF}\" \
+      --env \"VARNISH_STORAGE=${VARNISH_STORAGE}\" \
       ${ADD_BACKEND_HOSTS} \
       --volumes-from volume-config.%p \
       ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}; \
@@ -92,6 +109,8 @@ ExecStart=/bin/sudo /bin/bash -c \
       --name %p \
       -p %i:80 \
       -p 8500:8443 \
+      --env \"VARNISH_VCL_CONF=${VARNISH_VCL_CONF}\" \
+      --env \"VARNISH_STORAGE=${VARNISH_STORAGE}\" \
       ${ADD_BACKEND_HOSTS} \
       ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}; \
   fi"
