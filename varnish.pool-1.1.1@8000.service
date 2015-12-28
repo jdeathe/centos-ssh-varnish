@@ -37,6 +37,7 @@ Environment="ADD_BACKEND_HOSTS=--add-host backend-1:172.17.8.101 \
                                --add-host backend-3:172.17.8.103 \
 "
 
+
 # Create a data container for the configuration volume
 ExecStartPre=/bin/sudo /bin/bash -c \
   "if [[ busybox != $(/usr/bin/docker images | /bin/grep -e '^busybox[ ]\{1,\}' | /bin/grep -o 'busybox') ]]; then \
@@ -91,7 +92,7 @@ ExecStart=/bin/sudo /bin/bash -c \
       --name %p \
       -p %i:80 \
       -p 8500:8443 \
-      ${ADD_BACKEND_HOSTS} \ \
+      ${ADD_BACKEND_HOSTS} \
       ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}; \
   fi"
 
