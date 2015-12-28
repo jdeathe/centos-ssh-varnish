@@ -71,7 +71,7 @@ sudo systemctl stop ${OPT_SERVICE_NAME_FULL} &> /dev/null
 remove_docker_container_name volume-config.${OPT_SERVICE_NAME_SHORT}
 remove_docker_container_name ${OPT_SERVICE_NAME_SHORT}
 
-cp ${OPT_SERVICE_NAME_FULL} /etc/systemd/system/
+sudo cp ${OPT_SERVICE_NAME_FULL} /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable /etc/systemd/system/${OPT_SERVICE_NAME_FULL}
 
