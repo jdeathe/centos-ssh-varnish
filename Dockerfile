@@ -36,9 +36,11 @@ RUN rpm --nosignature -Uvh http://repo.varnish-cache.org/redhat/varnish-3.0/el6/
 ADD etc/varnish-start /etc/
 ADD etc/services-config/supervisor/supervisord.conf /etc/services-config/supervisor/
 ADD etc/services-config/varnish/docker-default.vcl /etc/services-config/varnish/
+ADD etc/services-config/varnish/docker-cluster.vcl /etc/services-config/varnish/
 
 RUN ln -sf /etc/services-config/supervisor/supervisord.conf /etc/supervisord.conf \
 	&& ln -sf /etc/services-config/varnish/docker-default.vcl /etc/varnish/docker-default.vcl \
+	&& ln -sf /etc/services-config/varnish/docker-cluster.vcl /etc/varnish/docker-cluster.vcl \
 	&& chmod +x /etc/varnish-start \
 	&& chmod 644 /etc/varnish/*.vcl
 
