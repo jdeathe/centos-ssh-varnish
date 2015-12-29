@@ -31,6 +31,7 @@ Run up a container named ```varnish.pool-1.1.1``` from the docker image ```jdeat
 
 ```
 $ docker run -d \
+  --privileged \
   --name varnish.pool-1.1.1 \
   -p 80:80 \
   --add-host backend-1:172.17.8.101 \
@@ -111,6 +112,7 @@ To run the a docker container from this image you can use the included [run.sh](
 $ docker stop varnish.pool-1.1.1 && \
   docker rm varnish.pool-1.1.1
 $ docker run -d \
+  --privileged \
   --name varnish.pool-1.1.1 \
   -p 8000:80 \
   -p 8500:8443 \
