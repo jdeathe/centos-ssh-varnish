@@ -83,21 +83,12 @@ $ mkdir -p /etc/services-config/varnish.pool-1.1.1
 
 Create the data volume, mounting the applicable docker host's configuration directories to the associated  */etc/services-config/* sub-directories in the docker container. Docker will pull the busybox:latest image if you don't already have it available locally.
 
-```
-$ docker run \
-  --name volume-config.varnish.pool-1.1.1 \
-  -v /etc/services-config/varnish.pool-1.1.1/supervisor:/etc/services-config/supervisor \
-  -v /etc/services-config/varnish.pool-1.1.1/varnish:/etc/services-config/varnish \
-  busybox:latest \
-  /bin/true
-```
-
 If enabling the SSH service in the supervisor configuration you can define a persistent authorised key for SSH access by mounting the ssh.pool-1 directory and adding the key there.
 
 ```
 $ docker run \
   --name volume-config.varnish.pool-1.1.1 \
-  -v /etc/services-config/ssh.pool-1:/etc/services-config/ssh \
+  -v /etc/services-config/ssh.pool-1/ssh:/etc/services-config/ssh \
   -v /etc/services-config/varnish.pool-1.1.1/supervisor:/etc/services-config/supervisor \
   -v /etc/services-config/varnish.pool-1.1.1/varnish:/etc/services-config/varnish \
   busybox:latest \
