@@ -116,7 +116,7 @@ $ docker run -d \
 
 #### Using configuration volume
 
-By default a single backend host is required. In this example 3 backend hosts are defined with the IP range 172.17.8.101 - 172.17.8.103. In this case the docker-default.vcl would require updating to handle more than one backend host as described in the (Custom Configuration)[https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/README.md#custom-configuration] section below.
+By default a single backend host is required. In this example 3 backend hosts are defined with the IP range 172.17.8.101 - 172.17.8.103. In this case the docker-default.vcl would require updating to handle more than one backend host as described in the [Custom Configuration](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/README.md#custom-configuration) section below.
 
 ```
 $ docker stop varnish.pool-1.1.1 && \
