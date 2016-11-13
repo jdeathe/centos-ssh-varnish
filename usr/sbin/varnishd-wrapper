@@ -16,7 +16,7 @@ DAEMON_OPTS="-F
 "
 NICENESS=${VARNISH_NICENESS:-10}
 
-sprintf -- \
+printf -- \
 	"Starting Varnish Cache: \n%s\n" \
 	"${DAEMON_OPTS}"
 
