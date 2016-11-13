@@ -27,6 +27,11 @@ NO_CACHE ?= false
 # Directory path for release packages
 DIST_PATH ?= ./dist
 
+# Docker --ulimit settings
+ULIMIT_MEMLOCK ?= 82000
+ULIMIT_NOFILE ?= 131072
+ULIMIT_NPROC ?= 9223372036854775807
+
 # ------------------------------------------------------------------------------
 # Application container configuration
 # ------------------------------------------------------------------------------
@@ -44,9 +49,6 @@ SSH_USER_PASSWORD ?=
 SSH_USER_PASSWORD_HASHED ?= false
 SSH_USER_SHELL ?= /bin/bash
 # ------------------------------------------------------------------------------
-ULIMIT_MEMLOCK ?= 82000
-ULIMIT_NOFILE ?= 131072
-ULIMIT_NPROC ?= 9223372036854775807
 VARNISH_ADMIN_LISTEN_ADDRESS ?= 127.0.0.1
 VARNISH_ADMIN_LISTEN_PORT ?= 6082
 VARNISH_LISTEN_ADDRESS ?= 0.0.0.0
