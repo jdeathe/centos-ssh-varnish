@@ -16,13 +16,9 @@ DAEMON_OPTS="-F
 "
 NICENESS=${VARNISH_NICENESS:-10}
 
-# ulimit settings require docker containers to be run with --privileged
-# https://github.com/dotcloud/docker/issues/4717
-# ulimit -n ${NFILES:-131072}
-# ulimit -l ${MEMLOCK:-82000}
-# ulimit -u ${NPROCS:-unlimited}
-
-sprintf --- "Starting Varnish Cache: \n%s\n" "${DAEMON_OPTS}"
+sprintf -- \
+	"Starting Varnish Cache: \n%s\n" \
+	"${DAEMON_OPTS}"
 
 exec ${NICE} \
 	-n ${NICENESS} \

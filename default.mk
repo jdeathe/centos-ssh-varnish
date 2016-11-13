@@ -2,9 +2,11 @@
 # Common parameters of create and run targets
 define DOCKER_CONTAINER_PARAMETERS
 -t \
---privileged \
 --name $(DOCKER_NAME) \
 --restart $(DOCKER_RESTART_POLICY) \
+--ulimit memlock=$(ULIMIT_MEMLOCK) \
+--ulimit nofile=$(ULIMIT_NOFILE) \
+--ulimit nproc=$(ULIMIT_NPROC) \
 --env "VARNISH_ADMIN_LISTEN_ADDRESS=$(VARNISH_ADMIN_LISTEN_ADDRESS)" \
 --env "VARNISH_ADMIN_LISTEN_PORT=$(VARNISH_ADMIN_LISTEN_PORT)" \
 --env "VARNISH_LISTEN_ADDRESS=$(VARNISH_LISTEN_ADDRESS)" \

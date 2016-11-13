@@ -52,10 +52,7 @@ EXPOSE 80 8443
 # -----------------------------------------------------------------------------
 # Set default environment variables
 # -----------------------------------------------------------------------------
-ENV MEMLOCK="82000" \
-	NFILES="131072" \
-	NPROCS="unlimited" \
-	SSH_AUTOSTART_SSHD=false \
+ENV SSH_AUTOSTART_SSHD=false \
 	SSH_AUTOSTART_SSHD_BOOTSTRAP=false \
 	VARNISH_ADMIN_LISTEN_ADDRESS="127.0.0.1" \
 	VARNISH_ADMIN_LISTEN_PORT="6082" \
