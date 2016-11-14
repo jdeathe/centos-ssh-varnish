@@ -30,8 +30,7 @@ For cases where access to docker exec is not possible the preferred method is to
 Run up a container named ```varnish.pool-1.1.1``` from the docker image ```jdeathe/centos-ssh-varnish``` on port 80 of your docker host. 1 backend host is defined with the IP address 172.17.8.101; this is required to identify the backend hosts from within the Varnish VCL file.
 
 ```
-$ docker run -d \
-  --privileged \
+$ docker run -d -t \
   --name varnish.pool-1.1.1 \
   -p 80:80 \
   --add-host backend-1:172.17.8.101 \
@@ -97,18 +96,20 @@ $ docker run \
 
 ### Running
 
-To run the a docker container from this image you can use the included [run.sh](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/run.sh) and [run.conf](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/run.conf) scripts. The helper script will stop any running container of the same name, remove it and run a new daemonised container on an unspecified host port. Alternatively you can use the following to make the http service available on port 8000 and offloaded https on port 8500 of the docker host. The environment variable ```VARNISH_STORAGE``` has been used to set up a 256M memory based storage instead of the default file based type.
+To run the a docker container from this image you can use the included Makefile targets. Alternatively you can use the following to make the http service available on port 8000 and offloaded https on port 8500 of the docker host. The environment variable ```VARNISH_STORAGE``` has been used to set up a 256M memory based storage instead of the default file based type.
 
 #### Using environment variables
 
 ```
 $ docker stop varnish.pool-1.1.1 && \
   docker rm varnish.pool-1.1.1
-$ docker run -d \
-  --privileged \
+$ docker run -d -t \
   --name varnish.pool-1.1.1 \
-  -p 8000:80 \
-  -p 8500:8443 \
+  --publish 8000:80 \
+  --publish 8500:8443 \
+  --ulimit memlock=82000 \
+  --ulimit nofile=131072 \
+  --ulimit nproc=65535 \
   --env "VARNISH_STORAGE=malloc,256M" \
   --add-host backend-1:172.17.8.101 \
   jdeathe/centos-ssh-varnish:latest
@@ -121,11 +122,13 @@ By default a single backend host is required. In this example 3 backend hosts ar
 ```
 $ docker stop varnish.pool-1.1.1 && \
   docker rm varnish.pool-1.1.1
-$ docker run -d \
-  --privileged \
+$ docker run -d -t \
   --name varnish.pool-1.1.1 \
-  -p 8000:80 \
-  -p 8500:8443 \
+  --publish 8000:80 \
+  --publish 8500:8443 \
+  --ulimit memlock=82000 \
+  --ulimit nofile=131072 \
+  --ulimit nproc=65535 \
   --add-host backend-1:172.17.8.101 \
   --add-host backend-2:172.17.8.102 \
   --add-host backend-3:172.17.8.103 \
