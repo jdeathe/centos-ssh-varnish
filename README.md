@@ -3,15 +3,17 @@ centos-ssh-varnish
 
 Docker Image including CentOS-6 6.8 x86_64 and Varnish Cache 3.0.
 
-Supports custom configuration via a configuration data volume.
-
 ## Overview & links
 
-The [Dockerfile](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/Dockerfile) can be used to build a base image that can be run as-is or used as the bases for other more specific builds.
+- centos-6 [(centos-6/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/Dockerfile)
 
-Included in the build is the EPEL repository and SSH, vi and MySQL are installed along with python-pip, supervisor and supervisor-stdout.
+#### centos-6
 
-[Supervisor](http://supervisord.org/) is used to start varnishd (and optionally the sshd) daemon when a docker container based on this image is run. To enable simple viewing of stdout for the sshd subprocess, supervisor-stdout is included. This allows you to see output from the supervisord controlled subprocesses with `docker logs <docker-container-name>`.
+The latest CentOS-6 based release can be pulled from the `centos-6` Docker tag. For a specific release tag the convention is `centos-6-1.2.0` for the [1.2.0](https://github.com/jdeathe/centos-ssh-varnish/tree/1.0.0) release tag.
+
+Included in the build are the [SCL](https://www.softwarecollections.org/), [EPEL](http://fedoraproject.org/wiki/EPEL) and [IUS](https://ius.io) repositories. Installed packages include [OpenSSH](http://www.openssh.com/portable.html) secure shell, [vim-minimal](http://www.vim.org/), are installed along with python-setuptools, [supervisor](http://supervisord.org/) and [supervisor-stdout](https://github.com/coderanger/supervisor-stdout).
+
+Supervisor is used to start the varnishd (and optionally the sshd) daemon when a docker container based on this image is run. To enable simple viewing of stdout for the service's subprocess, supervisor-stdout is included. This allows you to see output from the supervisord controlled subprocesses with `docker logs {docker-container-name}`.
 
 If enabling and configuring SSH access, it is by public key authentication and, by default, the [Vagrant](http://www.vagrantup.com/) [insecure private key](https://github.com/mitchellh/vagrant/blob/master/keys/vagrant) is required.
 
