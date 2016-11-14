@@ -52,9 +52,6 @@ backend terminated_https_1 { .host = "backend-1"; .port = "8443"; .first_byte_ti
 director director_http round-robin {
 	{ .backend = http_1; }
 }
-director director_https round-robin {
-	{ .backend = https_1; }
-}
 director director_terminated_https round-robin {
 	{ .backend = terminated_https_1; }
 }
