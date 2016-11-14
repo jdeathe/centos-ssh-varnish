@@ -173,10 +173,10 @@ sub vcl_recv {
 	}
 
 	# Never cache these paths.
-	if (req.url ~ "^/admin/.*$" || 
-		req.url ~ "^.*/ajax/.*$") {
-		return (pass);
-	}
+	# if (req.url ~ "^/admin/.*$" || 
+	# 	req.url ~ "^.*/ajax/.*$") {
+	# 	return (pass);
+	# }
 
 	# Cache-Control
 	if (req.http.Cache-Control ~ "(private|no-cache|no-store)") {
@@ -198,7 +198,7 @@ sub vcl_recv {
 		set req.http.Cookie = regsuball(req.http.Cookie, "^[; ]+|[; ]+$", "");
 
 		if (req.http.Cookie == "") {
-		  unset req.http.Cookie;
+			unset req.http.Cookie;
 		}
 	}
 
