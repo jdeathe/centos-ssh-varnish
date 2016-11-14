@@ -96,7 +96,9 @@ $ docker run \
 
 ### Running
 
-To run the a docker container from this image you can use the included Makefile targets. Alternatively you can use the following to make the http service available on port 8000 and offloaded https on port 8500 of the docker host. The environment variable ```VARNISH_STORAGE``` has been used to set up a 256M memory based storage instead of the default file based type.
+To run the a docker container from this image you can use the standard docker commands. Alternatively, if you have a checkout of the [source repository](https://github.com/jdeathe/centos-ssh-varnish), and have make installed the Makefile provides targets to build, install, start, stop etc. where environment variables can be used to configure the container options and set custom docker run parameters.
+
+In the following example the http service is bound to port 8000 and offloaded https on port 8500 of the docker host. Also, the environment variable ```VARNISH_STORAGE``` has been used to set up a 256M memory based storage instead of the default file based type.
 
 #### Using environment variables
 
