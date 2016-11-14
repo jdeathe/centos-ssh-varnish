@@ -110,8 +110,7 @@ sub vcl_recv {
 		remove req.http.X-Forwarded-Port;
 		set req.http.X-Forwarded-Port = server.port;
 
-		if (server.port == 8443 ||
-			server.port == 8500) {
+		if (server.port ~ "^85[0-7][0-9]$") {
 			# Remove the port from host request
 #			set req.http.host = regsub(req.http.host, "^([a-zA-Z]+\.)?(app-)([0-9]+)(\.[a-zA-Z]+)?(:\d)?$", "\1\2\3\4");
 
