@@ -41,11 +41,6 @@ probe healthcheck {
 backend http_1 { .host = "backend-1"; .port = "80"; .first_byte_timeout = 300s; .probe = healthcheck; }
 
 # -----------------------------------------------------------------------------
-# HTTPS Backends
-# -----------------------------------------------------------------------------
-backend https_1 { .host = "backend-1"; .port = "443"; .first_byte_timeout = 300s; .probe = healthcheck; }
-
-# -----------------------------------------------------------------------------
 # HTTP (HTTPS Terminated) Backends
 # -----------------------------------------------------------------------------
 backend terminated_https_1 { .host = "backend-1"; .port = "8443"; .first_byte_timeout = 300s; .probe = healthcheck; }
@@ -86,9 +81,6 @@ sub vcl_recv {
 		remove req.http.X-Forwarded-Proto;
 		set req.http.X-Forwarded-Proto = "https";
 		set req.backend = director_terminated_https;
-	} else if (server.port == 443) {
-		# HTTPS
-		set req.backend = director_https;
 	} else {
 		# Default to HTTP
 		set req.backend = director_http;
