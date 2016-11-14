@@ -38,12 +38,12 @@ probe healthcheck {
 # -----------------------------------------------------------------------------
 # HTTP Backends
 # -----------------------------------------------------------------------------
-backend http_1 { .host = "backend-1"; .port = "80"; .first_byte_timeout = 300s; .probe = healthcheck; }
+backend http_1 { .host = "httpd_1"; .port = "80"; .first_byte_timeout = 300s; .probe = healthcheck; }
 
 # -----------------------------------------------------------------------------
 # HTTP (HTTPS Terminated) Backends
 # -----------------------------------------------------------------------------
-backend terminated_https_1 { .host = "backend-1"; .port = "8443"; .first_byte_timeout = 300s; .probe = healthcheck; }
+backend terminated_https_1 { .host = "httpd_1"; .port = "8443"; .first_byte_timeout = 300s; .probe = healthcheck; }
 
 
 # -----------------------------------------------------------------------------

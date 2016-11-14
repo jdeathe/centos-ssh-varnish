@@ -35,7 +35,7 @@ Run up a container named `varnish.pool-1.1.1` from the docker image `jdeathe/cen
 $ docker run -d -t \
   --name varnish.pool-1.1.1 \
   -p 80:80 \
-  --add-host backend-1:172.17.8.101 \
+  --add-host httpd_1:172.17.8.101 \
   jdeathe/centos-ssh-varnish:latest
 ```
 
@@ -66,7 +66,7 @@ $ docker run -d -t \
   --ulimit nofile=131072 \
   --ulimit nproc=65535 \
   --env "VARNISH_STORAGE=malloc,256M" \
-  --add-host backend-1:172.17.8.101 \
+  --add-host httpd_1:172.17.8.101 \
   jdeathe/centos-ssh-varnish:latest
 ```
 
