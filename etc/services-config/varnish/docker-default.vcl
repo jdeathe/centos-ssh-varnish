@@ -38,21 +38,17 @@ probe healthcheck {
 # -----------------------------------------------------------------------------
 # HTTP Backends
 # -----------------------------------------------------------------------------
-backend http_1 { .host = "backend-1"; .port = "8080"; .first_byte_timeout = 300s; .probe = healthcheck; }
-backend http_app_1_1_1 { .host = "backend-1"; .port = "8080"; .first_byte_timeout = 300s; .probe = healthcheck; }
-backend http_app_2_1_1 { .host = "backend-1"; .port = "8081"; .first_byte_timeout = 300s; .probe = healthcheck; }
-
-# -----------------------------------------------------------------------------
-# HTTP (HTTPS Terminated) Backends
-# -----------------------------------------------------------------------------
-backend http_ts_1 { .host = "backend-1"; .port = "8443"; .first_byte_timeout = 300s; .probe = healthcheck; }
-backend http_ts_app_1_1_1 { .host = "backend-1"; .port = "8580"; .first_byte_timeout = 300s; .probe = healthcheck; }
-backend http_ts_app_2_1_1 { .host = "backend-1"; .port = "8581"; .first_byte_timeout = 300s; .probe = healthcheck; }
+backend http_1 { .host = "backend-1"; .port = "80"; .first_byte_timeout = 300s; .probe = healthcheck; }
 
 # -----------------------------------------------------------------------------
 # HTTPS Backends
 # -----------------------------------------------------------------------------
 backend https_1 { .host = "backend-1"; .port = "443"; .first_byte_timeout = 300s; .probe = healthcheck; }
+
+# -----------------------------------------------------------------------------
+# HTTP (HTTPS Terminated) Backends
+# -----------------------------------------------------------------------------
+backend terminated_https_1 { .host = "backend-1"; .port = "8443"; .first_byte_timeout = 300s; .probe = healthcheck; }
 
 
 # -----------------------------------------------------------------------------
@@ -61,27 +57,11 @@ backend https_1 { .host = "backend-1"; .port = "443"; .first_byte_timeout = 300s
 director director_http round-robin {
 	{ .backend = http_1; }
 }
-director director_http_ts round-robin {
-	{ .backend = http_ts_1; }
-}
 director director_https round-robin {
 	{ .backend = https_1; }
 }
-
-# app-1
-director director_http_app_1 round-robin {
-	{ .backend = http_app_1_1_1; }
-}
-director director_http_ts_app_1 round-robin {
-	{ .backend = http_ts_app_1_1_1; }
-}
-
-# app-2
-director director_http_app_2 round-robin {
-	{ .backend = http_app_2_1_1; }
-}
-director director_http_ts_app_2 round-robin {
-	{ .backend = http_ts_app_2_1_1; }
+director director_terminated_https round-robin {
+	{ .backend = terminated_https_1; }
 }
 
 # -----------------------------------------------------------------------------
@@ -101,53 +81,17 @@ sub vcl_recv {
 		set req.http.X-Forwarded-For = client.ip;
 	}
 
-	# HTTP port range is 8000-8079 and HTTPS offloaded port range is 8500-8579
-	# app-n || app-n.local hosts 
-	if (req.http.host ~ "^app-[0-9]+(\.local)?(:8[05][0-7][0-9])?$") {
-		# Make host domain consistent so only cached once: (app-1 -> app-1.local)
-		set req.http.host = regsub(req.http.host, "^(app-[0-9]+)(\.local)?(:\d{4})?", "\1.local\3");
-
-		remove req.http.X-Forwarded-Port;
-		set req.http.X-Forwarded-Port = server.port;
-
-		if (server.port ~ "^85[0-7][0-9]$") {
-			# Remove the port from host request
-#			set req.http.host = regsub(req.http.host, "^([a-zA-Z]+\.)?(app-)([0-9]+)(\.[a-zA-Z]+)?(:\d)?$", "\1\2\3\4");
-
-			# Remove the port from the request URL
-#			set req.url = regsub(req.url, "^(\w+://)([^/]+)(:\d)?", "\1\2");
-
-			# SSL Terminated upstream so indcate this with a custom header
-			remove req.http.X-Forwarded-Proto;
-			set req.http.X-Forwarded-Proto = "https";
-
-			# Set director by host
-			if (req.http.host ~ "^app-1.local") {
-				set req.backend = director_http_ts_app_1;
-			} else if (req.http.host ~ "^app-2.local") {
-				set req.backend = director_http_ts_app_2;
-			}
-		} else {
-			# Remove the port from host request
-#			set req.http.host = regsub(req.http.host, "^([a-zA-Z]+\.)?(app-)([0-9]+)(\.[a-zA-Z]+)?(:\d)?$", "\1\2\3\4");
-
-			if (req.http.host ~ "^app-1.local") {
-				set req.backend = director_http_app_1;
-			} else if (req.http.host ~ "^app-2.local") {
-				set req.backend = director_http_app_2;
-			}
-		}
+	if (server.port == 8443) {
+		# SSL Terminated upstream so indcate this with a custom header
+		remove req.http.X-Forwarded-Proto;
+		set req.http.X-Forwarded-Proto = "https";
+		set req.backend = director_terminated_https;
+	} else if (server.port == 443) {
+		# HTTPS
+		set req.backend = director_https;
 	} else {
-		if (server.port == 8443) {
-			# SSL Terminated upstream so indcate this with a custom header
-			remove req.http.X-Forwarded-Proto;
-			set req.http.X-Forwarded-Proto = "https";
-			set req.backend = director_http_ts;
-		} else if (server.port == 443) {
-			set req.backend = director_https;
-		} else {
-			set req.backend = director_http;
-		}
+		# Default to HTTP
+		set req.backend = director_http;
 	}
 
 	# Non-RFC2616 or CONNECT which is weird.
@@ -183,7 +127,7 @@ sub vcl_recv {
 		return (pass);
 	}
 
-	# Allow caching of static files
+	# Cache static assets
 	if (req.url ~ "\.(gif|png|jpe?g|ico|swf|css|js|html?|txt)$") {
 		unset req.http.Cookie;
 		return (lookup);
