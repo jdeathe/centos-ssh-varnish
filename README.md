@@ -36,7 +36,7 @@ $ docker run -d -t \
   --name varnish.pool-1.1.1 \
   -p 80:80 \
   --add-host httpd_1:172.17.8.101 \
-  jdeathe/centos-ssh-varnish:latest
+  jdeathe/centos-ssh-varnish:centos-6
 ```
 
 Now you can verify it is initialised and running successfully by inspecting the container's logs.
@@ -67,7 +67,7 @@ $ docker run -d -t \
   --ulimit nproc=65535 \
   --env "VARNISH_STORAGE=malloc,256M" \
   --add-host httpd_1:172.17.8.101 \
-  jdeathe/centos-ssh-varnish:latest
+  jdeathe/centos-ssh-varnish:centos-6
 ```
 
 Now you can verify it is initialised and running successfully by inspecting the container's logs:
