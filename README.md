@@ -1,7 +1,7 @@
 centos-ssh-varnish
 ==================
 
-Docker Image including CentOS-6 6.8 x86_64 and Varnish Cache 3.0.
+Docker Image including CentOS-6 6.8 x86_64 and Varnish Cache 4.1.
 
 ## Overview & links
 
@@ -96,7 +96,7 @@ The Varnish VLC configuration file to load is set using `VARNISH_VCL_CONF`. The 
 
 The `VARNISH_TTL` can be used to set a hard minimum time to live for cached documents. The default is 120 seconds.
 
-##### (-w) VARNISH_MIN_THREADS, VARNISH_MAX_THREADS & VARNISH_THREAD_TIMEOUT
+##### VARNISH_MIN_THREADS, VARNISH_MAX_THREADS & VARNISH_THREAD_TIMEOUT
 
 Start at least `VARNISH_MIN_THREADS` but no more than `VARNISH_MAX_THREADS` worker threads with the `VARNISH_THREAD_TIMEOUT` idle timeout.
 

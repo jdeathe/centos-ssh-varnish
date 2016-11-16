@@ -1,7 +1,7 @@
 # =============================================================================
 # jdeathe/centos-ssh-varnish
 #
-# CentOS-6, Varnish 3.0
+# CentOS-6, Varnish 4.1
 #
 # =============================================================================
 FROM jdeathe/centos-ssh:centos-6-1.7.3
@@ -13,9 +13,9 @@ MAINTAINER James Deathe <james.deathe@gmail.com>
 # -----------------------------------------------------------------------------
 RUN rpm --rebuilddb \
 	&& rpm --nosignature \
-		-Uvh http://repo.varnish-cache.org/redhat/varnish-3.0/el6/noarch/varnish-release/varnish-release-3.0-1.el6.noarch.rpm \
+		-i https://repo.varnish-cache.org/redhat/varnish-4.1.el6.rpm \
 	&& yum --setopt=tsflags=nodocs -y install \
-		varnish-3.0.7-1.el6 \
+		varnish-4.1.3-1.el6 \
 	&& yum versionlock add \
 		varnish* \
 	&& rm -rf /var/cache/yum/* \
@@ -52,7 +52,7 @@ ENV SSH_AUTOSTART_SSHD=false \
 	VARNISH_ADMIN_LISTEN_ADDRESS="127.0.0.1" \
 	VARNISH_ADMIN_LISTEN_PORT="6082" \
 	VARNISH_LISTEN_ADDRESS="0.0.0.0" \
-	VARNISH_LISTEN_PORT="80,0.0.0.0:8443" \
+	VARNISH_LISTEN_PORT="80 -a 0.0.0.0:8443" \
 	VARNISH_MAX_THREADS="1000" \
 	VARNISH_MIN_THREADS="50" \
 	VARNISH_PIDFILE="/var/run/varnish.pid" \

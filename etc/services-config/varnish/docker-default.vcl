@@ -1,8 +1,7 @@
-# -----------------------------------------------------------------------------
-# Note:
-# Backend hosts entries or DNS configuration is required to map the backend-1, 
-# backend-2, backend-n hostnames to the backend host IP addresses.
-# -----------------------------------------------------------------------------
+vcl 4.0;
+
+import directors;
+import std;
 
 # -----------------------------------------------------------------------------
 # Healthcheck probe (basic)
@@ -49,54 +48,64 @@ backend terminated_https_1 { .host = "httpd_1"; .port = "8443"; .first_byte_time
 # -----------------------------------------------------------------------------
 # Directors
 # -----------------------------------------------------------------------------
-director director_http round-robin {
-	{ .backend = http_1; }
-}
-director director_terminated_https round-robin {
-	{ .backend = terminated_https_1; }
+sub vcl_init {
+	new director_http = directors.round_robin();
+	director_http.add_backend(http_1);
+
+	new director_terminated_https = directors.round_robin();
+	director_terminated_https.add_backend(terminated_https_1);
 }
 
 # -----------------------------------------------------------------------------
-# VCL logic
+# Client side
 # -----------------------------------------------------------------------------
 sub vcl_recv {
-	# Allow stale objects to be served if necessary
-	if (! req.backend.healthy) {
-		set req.grace = 1h;
-	} else {
-		set req.grace = 15s;
+	if (req.method == "PRI") {
+		# Reject SPDY or HTTP/2.0 with Method Not Allowed
+		return (synth(405));
 	}
 
-	if (req.http.x-forwarded-for) {
+	unset req.http.Forwarded;
+	unset req.http.X-Forwarded-Port;
+	unset req.http.X-Forwarded-Proto;
+
+	if (req.http.X-Forwarded-For &&
+		req.http.X-Forwarded-For != ("" + client.ip)) {
 		set req.http.X-Forwarded-For = req.http.X-Forwarded-For + ", " + client.ip;
-	} else {
+	} else if ( ! req.http.X-Forwarded-For) {
 		set req.http.X-Forwarded-For = client.ip;
 	}
 
-	if (server.port == 8443) {
+	if (std.port(server.ip) == 8443) {
 		# SSL Terminated upstream so indcate this with a custom header
-		remove req.http.X-Forwarded-Proto;
+		set req.http.X-Forwarded-Port = "443";
 		set req.http.X-Forwarded-Proto = "https";
-		set req.backend = director_terminated_https;
-	} else {
+		set req.backend_hint = director_terminated_https.backend();
+	} else if (std.port(server.ip) == 80) {
 		# Default to HTTP
-		set req.backend = director_http;
+		set req.http.X-Forwarded-Port = "80";
+		set req.backend_hint = director_http.backend();
+	} else {
+		# return (synth(403));
+		set req.backend_hint = director_http.backend();
 	}
 
-	# Non-RFC2616 or CONNECT which is weird.
-	if (req.request != "GET" &&
-		req.request != "HEAD" &&
-		req.request != "PUT" &&
-		req.request != "POST" &&
-		req.request != "TRACE" &&
-		req.request != "OPTIONS" &&
-		req.request != "DELETE") {
+	set req.http.X-Varnish-Grace = "none";
+
+	if (req.method != "GET" &&
+		req.method != "HEAD" &&
+		req.method != "PUT" &&
+		req.method != "POST" &&
+		req.method != "TRACE" &&
+		req.method != "OPTIONS" &&
+		req.method != "DELETE") {
+		# Non-RFC2616 or CONNECT which is weird.
 		return (pipe);
 	}
 
-	# Only deal with GET and HEAD by default
-	if (req.request != "GET" && 
-		req.request != "HEAD") {
+	if (req.method != "GET" && 
+		req.method != "HEAD") {
+		# Only deal with GET and HEAD by default
 		return (pass);
 	}
 
@@ -104,12 +113,6 @@ sub vcl_recv {
 	if (req.http.Expect) {
 		return (pipe);
 	}
-
-	# Never cache these paths.
-	# if (req.url ~ "^/admin/.*$" || 
-	# 	req.url ~ "^.*/ajax/.*$") {
-	# 	return (pass);
-	# }
 
 	# Cache-Control
 	if (req.http.Cache-Control ~ "(private|no-cache|no-store)") {
@@ -119,7 +122,7 @@ sub vcl_recv {
 	# Cache static assets
 	if (req.url ~ "\.(gif|png|jpe?g|ico|swf|css|js|html?|txt)$") {
 		unset req.http.Cookie;
-		return (lookup);
+		return (hash);
 	}
 
 	# Remove all cookies that we doesn't need to know about. e.g. 3rd party analytics cookies
@@ -141,19 +144,49 @@ sub vcl_recv {
 		return (pass);
 	}
 
-	return (lookup);
+	return (hash);
 }
 
-sub vcl_fetch {
+sub vcl_hit {
+	if (obj.ttl >= 0s) {
+		return (deliver);
+	}
+
+	if (std.healthy(req.backend_hint) && 
+		obj.ttl + 15s > 0s) {
+		# set req.http.X-Varnish-Grace = "normal";
+		return (deliver);
+	} else if (obj.ttl + obj.grace > 0s) {
+		# set req.http.X-Varnish-Grace = "full";
+		return (deliver);
+	}
+
+	return (miss);
+}
+
+sub vcl_deliver {
+	# set resp.http.X-Varnish-Grace = req.http.X-Varnish-Grace;
+
+	return (deliver);
+}
+
+# -----------------------------------------------------------------------------
+# Backend
+# -----------------------------------------------------------------------------
+sub vcl_backend_response {
 	# Keep objects beyond their ttl
 	set beresp.grace = 6h;
 
 	if (beresp.ttl <= 0s ||
 		beresp.http.Set-Cookie ||
+		beresp.http.Surrogate-control ~ "no-store" ||
+		( ! beresp.http.Surrogate-Control && 
+			beresp.http.Cache-Control ~ "(private|no-cache|no-store)") ||
 		beresp.http.Vary == "*") {
 		# Mark as "Hit-For-Pass" for the next 2 minutes
+		set beresp.uncacheable = true;
 		set beresp.ttl = 120s;
-		return (hit_for_pass);
+		return (deliver);
 	}
 
 	return (deliver);
