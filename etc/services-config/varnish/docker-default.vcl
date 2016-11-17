@@ -1,8 +1,7 @@
-# -----------------------------------------------------------------------------
-# Note:
-# Backend hosts entries or DNS configuration is required to map the backend-1, 
-# backend-2, backend-n hostnames to the backend host IP addresses.
-# -----------------------------------------------------------------------------
+vcl 4.0;
+
+import directors;
+import std;
 
 # -----------------------------------------------------------------------------
 # Healthcheck probe (basic)
@@ -18,153 +17,76 @@ probe healthcheck {
 }
 
 # -----------------------------------------------------------------------------
-# Healthcheck probe (advanced)
-# -----------------------------------------------------------------------------
-#probe healthcheck_host_1 {
-#	.interval = 5s;
-#	.timeout = 2s;
-#	.window = 5;
-#	.threshold = 3;
-#	.initial = 2;
-#	.expected_response = 200;
-#	.request =
-#		"GET / HTTP/1.1"
-#		"Host: backend-1"
-#		"Connection: close"
-#		"User-Agent: varnish-probe"
-#		"Accept-Encoding: gzip, deflate" ;
-#}
-
-# -----------------------------------------------------------------------------
 # HTTP Backends
 # -----------------------------------------------------------------------------
-backend http_1 { .host = "backend-1"; .port = "8080"; .first_byte_timeout = 300s; .probe = healthcheck; }
-backend http_app_1_1_1 { .host = "backend-1"; .port = "8080"; .first_byte_timeout = 300s; .probe = healthcheck; }
-backend http_app_2_1_1 { .host = "backend-1"; .port = "8081"; .first_byte_timeout = 300s; .probe = healthcheck; }
+backend http_1 { .host = "httpd_1"; .port = "80"; .first_byte_timeout = 300s; .probe = healthcheck; }
 
 # -----------------------------------------------------------------------------
 # HTTP (HTTPS Terminated) Backends
 # -----------------------------------------------------------------------------
-backend http_ts_1 { .host = "backend-1"; .port = "8443"; .first_byte_timeout = 300s; .probe = healthcheck; }
-backend http_ts_app_1_1_1 { .host = "backend-1"; .port = "8580"; .first_byte_timeout = 300s; .probe = healthcheck; }
-backend http_ts_app_2_1_1 { .host = "backend-1"; .port = "8581"; .first_byte_timeout = 300s; .probe = healthcheck; }
-
-# -----------------------------------------------------------------------------
-# HTTPS Backends
-# -----------------------------------------------------------------------------
-backend https_1 { .host = "backend-1"; .port = "443"; .first_byte_timeout = 300s; .probe = healthcheck; }
-
+backend terminated_https_1 { .host = "httpd_1"; .port = "8443"; .first_byte_timeout = 300s; .probe = healthcheck; }
 
 # -----------------------------------------------------------------------------
 # Directors
 # -----------------------------------------------------------------------------
-director director_http round-robin {
-	{ .backend = http_1; }
-}
-director director_http_ts round-robin {
-	{ .backend = http_ts_1; }
-}
-director director_https round-robin {
-	{ .backend = https_1; }
-}
+sub vcl_init {
+	new director_http = directors.round_robin();
+	director_http.add_backend(http_1);
 
-# app-1
-director director_http_app_1 round-robin {
-	{ .backend = http_app_1_1_1; }
-}
-director director_http_ts_app_1 round-robin {
-	{ .backend = http_ts_app_1_1_1; }
-}
-
-# app-2
-director director_http_app_2 round-robin {
-	{ .backend = http_app_2_1_1; }
-}
-director director_http_ts_app_2 round-robin {
-	{ .backend = http_ts_app_2_1_1; }
+	new director_terminated_https = directors.round_robin();
+	director_terminated_https.add_backend(terminated_https_1);
 }
 
 # -----------------------------------------------------------------------------
-# VCL logic
+# Client side
 # -----------------------------------------------------------------------------
 sub vcl_recv {
-	# Allow stale objects to be served if necessary
-	if (! req.backend.healthy) {
-		set req.grace = 1h;
-	} else {
-		set req.grace = 15s;
+	if (req.method == "PRI") {
+		# Reject SPDY or HTTP/2.0 with Method Not Allowed
+		return (synth(405));
 	}
 
-	if (req.http.x-forwarded-for) {
+	unset req.http.Forwarded;
+	unset req.http.X-Forwarded-Port;
+	unset req.http.X-Forwarded-Proto;
+
+	if (req.http.X-Forwarded-For &&
+		req.http.X-Forwarded-For != ("" + client.ip)) {
 		set req.http.X-Forwarded-For = req.http.X-Forwarded-For + ", " + client.ip;
-	} else {
+	} else if ( ! req.http.X-Forwarded-For) {
 		set req.http.X-Forwarded-For = client.ip;
 	}
 
-	# HTTP port range is 8000-8079 and HTTPS offloaded port range is 8500-8579
-	# app-n || app-n.local hosts 
-	if (req.http.host ~ "^app-[0-9]+(\.local)?(:8[05][0-7][0-9])?$") {
-		# Make host domain consistent so only cached once: (app-1 -> app-1.local)
-		set req.http.host = regsub(req.http.host, "^(app-[0-9]+)(\.local)?(:\d{4})?", "\1.local\3");
-
-		remove req.http.X-Forwarded-Port;
-		set req.http.X-Forwarded-Port = server.port;
-
-		if (server.port == 8443 ||
-			server.port == 8500) {
-			# Remove the port from host request
-#			set req.http.host = regsub(req.http.host, "^([a-zA-Z]+\.)?(app-)([0-9]+)(\.[a-zA-Z]+)?(:\d)?$", "\1\2\3\4");
-
-			# Remove the port from the request URL
-#			set req.url = regsub(req.url, "^(\w+://)([^/]+)(:\d)?", "\1\2");
-
-			# SSL Terminated upstream so indcate this with a custom header
-			remove req.http.X-Forwarded-Proto;
-			set req.http.X-Forwarded-Proto = "https";
-
-			# Set director by host
-			if (req.http.host ~ "^app-1.local") {
-				set req.backend = director_http_ts_app_1;
-			} else if (req.http.host ~ "^app-2.local") {
-				set req.backend = director_http_ts_app_2;
-			}
-		} else {
-			# Remove the port from host request
-#			set req.http.host = regsub(req.http.host, "^([a-zA-Z]+\.)?(app-)([0-9]+)(\.[a-zA-Z]+)?(:\d)?$", "\1\2\3\4");
-
-			if (req.http.host ~ "^app-1.local") {
-				set req.backend = director_http_app_1;
-			} else if (req.http.host ~ "^app-2.local") {
-				set req.backend = director_http_app_2;
-			}
-		}
+	if (std.port(server.ip) == 8443) {
+		# SSL Terminated upstream so indcate this with a custom header
+		set req.http.X-Forwarded-Port = "443";
+		set req.http.X-Forwarded-Proto = "https";
+		set req.backend_hint = director_terminated_https.backend();
+	} else if (std.port(server.ip) == 80) {
+		# Default to HTTP
+		set req.http.X-Forwarded-Port = "80";
+		set req.backend_hint = director_http.backend();
 	} else {
-		if (server.port == 8443) {
-			# SSL Terminated upstream so indcate this with a custom header
-			remove req.http.X-Forwarded-Proto;
-			set req.http.X-Forwarded-Proto = "https";
-			set req.backend = director_http_ts;
-		} else if (server.port == 443) {
-			set req.backend = director_https;
-		} else {
-			set req.backend = director_http;
-		}
+		# return (synth(403));
+		set req.backend_hint = director_http.backend();
 	}
 
-	# Non-RFC2616 or CONNECT which is weird.
-	if (req.request != "GET" &&
-		req.request != "HEAD" &&
-		req.request != "PUT" &&
-		req.request != "POST" &&
-		req.request != "TRACE" &&
-		req.request != "OPTIONS" &&
-		req.request != "DELETE") {
+	set req.http.X-Varnish-Grace = "none";
+
+	if (req.method != "GET" &&
+		req.method != "HEAD" &&
+		req.method != "PUT" &&
+		req.method != "POST" &&
+		req.method != "TRACE" &&
+		req.method != "OPTIONS" &&
+		req.method != "DELETE") {
+		# Non-RFC2616 or CONNECT which is weird.
 		return (pipe);
 	}
 
-	# Only deal with GET and HEAD by default
-	if (req.request != "GET" && 
-		req.request != "HEAD") {
+	if (req.method != "GET" && 
+		req.method != "HEAD") {
+		# Only deal with GET and HEAD by default
 		return (pass);
 	}
 
@@ -173,21 +95,15 @@ sub vcl_recv {
 		return (pipe);
 	}
 
-	# Never cache these paths.
-	if (req.url ~ "^/admin/.*$" || 
-		req.url ~ "^.*/ajax/.*$") {
-		return (pass);
-	}
-
 	# Cache-Control
 	if (req.http.Cache-Control ~ "(private|no-cache|no-store)") {
 		return (pass);
 	}
 
-	# Allow caching of static files
+	# Cache static assets
 	if (req.url ~ "\.(gif|png|jpe?g|ico|swf|css|js|html?|txt)$") {
 		unset req.http.Cookie;
-		return (lookup);
+		return (hash);
 	}
 
 	# Remove all cookies that we doesn't need to know about. e.g. 3rd party analytics cookies
@@ -199,7 +115,7 @@ sub vcl_recv {
 		set req.http.Cookie = regsuball(req.http.Cookie, "^[; ]+|[; ]+$", "");
 
 		if (req.http.Cookie == "") {
-		  unset req.http.Cookie;
+			unset req.http.Cookie;
 		}
 	}
 
@@ -209,19 +125,49 @@ sub vcl_recv {
 		return (pass);
 	}
 
-	return (lookup);
+	return (hash);
 }
 
-sub vcl_fetch {
+sub vcl_hit {
+	if (obj.ttl >= 0s) {
+		return (deliver);
+	}
+
+	if (std.healthy(req.backend_hint) && 
+		obj.ttl + 15s > 0s) {
+		# set req.http.X-Varnish-Grace = "normal";
+		return (deliver);
+	} else if (obj.ttl + obj.grace > 0s) {
+		# set req.http.X-Varnish-Grace = "full";
+		return (deliver);
+	}
+
+	return (miss);
+}
+
+sub vcl_deliver {
+	# set resp.http.X-Varnish-Grace = req.http.X-Varnish-Grace;
+
+	return (deliver);
+}
+
+# -----------------------------------------------------------------------------
+# Backend
+# -----------------------------------------------------------------------------
+sub vcl_backend_response {
 	# Keep objects beyond their ttl
 	set beresp.grace = 6h;
 
 	if (beresp.ttl <= 0s ||
 		beresp.http.Set-Cookie ||
+		beresp.http.Surrogate-control ~ "no-store" ||
+		( ! beresp.http.Surrogate-Control && 
+			beresp.http.Cache-Control ~ "(private|no-cache|no-store)") ||
 		beresp.http.Vary == "*") {
 		# Mark as "Hit-For-Pass" for the next 2 minutes
+		set beresp.uncacheable = true;
 		set beresp.ttl = 120s;
-		return (hit_for_pass);
+		return (deliver);
 	}
 
 	return (deliver);
