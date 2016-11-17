@@ -17,24 +17,6 @@ probe healthcheck {
 }
 
 # -----------------------------------------------------------------------------
-# Healthcheck probe (advanced)
-# -----------------------------------------------------------------------------
-#probe healthcheck_host_1 {
-#	.interval = 5s;
-#	.timeout = 2s;
-#	.window = 5;
-#	.threshold = 3;
-#	.initial = 2;
-#	.expected_response = 200;
-#	.request =
-#		"GET / HTTP/1.1"
-#		"Host: backend-1"
-#		"Connection: close"
-#		"User-Agent: varnish-probe"
-#		"Accept-Encoding: gzip, deflate" ;
-#}
-
-# -----------------------------------------------------------------------------
 # HTTP Backends
 # -----------------------------------------------------------------------------
 backend http_1 { .host = "httpd_1"; .port = "80"; .first_byte_timeout = 300s; .probe = healthcheck; }
@@ -43,7 +25,6 @@ backend http_1 { .host = "httpd_1"; .port = "80"; .first_byte_timeout = 300s; .p
 # HTTP (HTTPS Terminated) Backends
 # -----------------------------------------------------------------------------
 backend terminated_https_1 { .host = "httpd_1"; .port = "8443"; .first_byte_timeout = 300s; .probe = healthcheck; }
-
 
 # -----------------------------------------------------------------------------
 # Directors
