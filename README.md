@@ -90,7 +90,7 @@ This should not be changed and will be ignored if set. The varnish-start script 
 
 ##### (-f) VARNISH_VCL_CONF
 
-The Varnish VLC configuration file to load is set using `VARNISH_VCL_CONF`. The default configuration supplied is located at the path `/etc/varnish/docker-default.vcl` and an alternative example is also available under `/etc/varnish/docker-cluster.vcl`.
+The Varnish VCL configuration file path, (or base64 encoded string of the configuration file contents), is set using `VARNISH_VCL_CONF`. The default configuration supplied is located at the path `/etc/varnish/docker-default.vcl`.
 
 ##### (-t) VARNISH_TTL
 

@@ -1,5 +1,38 @@
 #!/usr/bin/env bash
 
+function set_varnish_vcl_conf ()
+{
+	local VALUE="${1:-}"
+	local PLAIN_TEXT_PATTERN='.*vcl 4.0;.*'
+	local BASE64_PATTERN='^[A-Za-z0-9/+=]*$'
+
+	if [[ -n ${VALUE} ]] && [[ ! -s ${VALUE} ]]; then
+		# Decode base64 encoded values
+		if [[ ${VALUE} =~ ${BASE64_PATTERN} ]]; then
+			VALUE="$(
+				base64 -d -i <<< "${VALUE}"
+			)"
+		fi
+
+		if [[ ! ${VALUE} =~ ${PLAIN_TEXT_PATTERN} ]]; then
+			printf -- \
+				'ERROR: Invalid VCL File\n' \
+				>&2
+			sleep 0.1
+			exit 1
+		fi
+
+		printf \
+			-- '%s' \
+			"${VALUE}" \
+		> /etc/services-config/varnish/docker-default.vcl
+
+		unset VARNISH_VCL_CONF
+	fi
+}
+
+set_varnish_vcl_conf "${VARNISH_VCL_CONF}"
+
 VARNISHD=/usr/sbin/varnishd
 NICE=/bin/nice
 
