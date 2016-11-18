@@ -67,8 +67,7 @@ sub vcl_recv {
 		set req.http.X-Forwarded-Port = "80";
 		set req.backend_hint = director_http.backend();
 	} else {
-		# return (synth(403));
-		set req.backend_hint = director_http.backend();
+		return (synth(403));
 	}
 
 	set req.http.X-Varnish-Grace = "none";
