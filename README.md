@@ -80,19 +80,11 @@ $ docker logs varnish.pool-1.1.1
 
 There are several environmental variables defined at runtime which allows the operator to customise the running container. This may become necessary under special circumstances and the following show those that are most likely to be considered for review, the rest should be left unaltered and for clarification refer to the [varnishd documentation](https://www.varnish-cache.org/docs/3.0/reference/varnishd.html).
 
-##### (-a) VARNISH_LISTEN_ADDRESS & VARNISH_LISTEN_PORT
-
-`VARNISH_LISTEN_ADDRESS` is set to 0.0.0.0 by default and should not be altered. `VARNISH_LISTEN_PORT` has been used to add the listening port 80 and also to set a second listening address and port of 0.0.0.0:8448 for the special case of HTTPS traffic that has been terminated by an upstream load-balancer.
-
-##### (-P) VARNISH_PIDFILE
-
-This should not be changed and will be ignored if set. The varnish-start script will set the PID file to the default `/var/run/varnish.pid` file.
-
-##### (-f) VARNISH_VCL_CONF
+##### VARNISH_VCL_CONF
 
 The Varnish VCL configuration file path, (or base64 encoded string of the configuration file contents), is set using `VARNISH_VCL_CONF`. The default configuration supplied is located at the path `/etc/varnish/docker-default.vcl`.
 
-##### (-t) VARNISH_TTL
+##### VARNISH_TTL
 
 The `VARNISH_TTL` can be used to set a hard minimum time to live for cached documents. The default is 120 seconds.
 
@@ -100,6 +92,6 @@ The `VARNISH_TTL` can be used to set a hard minimum time to live for cached docu
 
 Start at least `VARNISH_MIN_THREADS` but no more than `VARNISH_MAX_THREADS` worker threads with the `VARNISH_THREAD_TIMEOUT` idle timeout.
 
-##### (-s) VARNISH_STORAGE
+##### VARNISH_STORAGE
 
 Use `VARNISH_STORAGE` to specify the storage backend. See the [varnishd documentation](https://www.varnish-cache.org/docs/3.0/reference/varnishd.html#storage-types) for the types and parameters available. The default is a file type backend but it is recommended to use malloc if there is enough RAM available.
