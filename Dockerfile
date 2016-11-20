@@ -62,4 +62,35 @@ ENV SSH_AUTOSTART_SSHD=false \
 	VARNISH_TTL="120" \
 	VARNISH_VCL_CONF="/etc/varnish/docker-default.vcl"
 
+# -----------------------------------------------------------------------------
+# Set image metadata
+# -----------------------------------------------------------------------------
+ARG RELEASE_VERSION="1.3.0"
+LABEL \
+	install="docker run \
+--rm \
+--privileged \
+--volume /:/media/root \
+jdeathe/centos-ssh-varnish:centos-6-${RELEASE_VERSION} \
+/usr/sbin/scmi install \
+--chroot=/media/root \
+--name=\${NAME} \
+--tag=centos-6-${RELEASE_VERSION}" \
+	uninstall="docker run \
+--rm \
+--privileged \
+--volume /:/media/root \
+jdeathe/centos-ssh-varnish:centos-6-${RELEASE_VERSION} \
+/usr/sbin/scmi uninstall \
+--chroot=/media/root \
+--name=\${NAME} \
+--tag=centos-6-${RELEASE_VERSION}" \
+	org.deathe.name="centos-ssh-varnish" \
+	org.deathe.version="${RELEASE_VERSION}" \
+	org.deathe.release="jdeathe/centos-ssh-varnish:centos-6-${RELEASE_VERSION}" \
+	org.deathe.license="MIT" \
+	org.deathe.vendor="jdeathe" \
+	org.deathe.url="https://github.com/jdeathe/centos-ssh-varnish" \
+	org.deathe.description="CentOS-6 6.8 x86_64 - Varnish Cache 4.1."
+
 CMD ["/usr/bin/supervisord", "--configuration=/etc/supervisord.conf"]
