@@ -26,10 +26,14 @@ RUN rpm --rebuilddb \
 # -----------------------------------------------------------------------------
 ADD usr/sbin/varnishd-wrapper \
 	/usr/sbin/
+ADD opt/scmi \
+	/opt/scmi/
 ADD etc/services-config/supervisor/supervisord.d \
 	/etc/services-config/supervisor/supervisord.d/
 ADD etc/services-config/varnish/docker-default.vcl \
 	/etc/services-config/varnish/
+ADD etc/systemd/system \
+	/etc/systemd/system/
 
 RUN ln -sf \
 		/etc/services-config/supervisor/supervisord.d/varnishd-wrapper.conf \
