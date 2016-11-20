@@ -49,14 +49,8 @@ SSH_USER_PASSWORD ?=
 SSH_USER_PASSWORD_HASHED ?= false
 SSH_USER_SHELL ?= /bin/bash
 # ------------------------------------------------------------------------------
-VARNISH_ADMIN_LISTEN_ADDRESS ?= 127.0.0.1
-VARNISH_ADMIN_LISTEN_PORT ?= 6082
-VARNISH_LISTEN_ADDRESS ?= 0.0.0.0
-VARNISH_LISTEN_PORT ?= 80 -a 0.0.0.0:8443
 VARNISH_MAX_THREADS ?= 1000
 VARNISH_MIN_THREADS ?= 50
-VARNISH_PIDFILE ?= /var/run/varnish.pid
-VARNISH_SECRET_FILE ?= /etc/varnish/secret
 VARNISH_STORAGE ?= file,/var/lib/varnish/varnish_storage.bin,1G
 VARNISH_THREAD_TIMEOUT ?= 120
 VARNISH_TTL ?= 120
