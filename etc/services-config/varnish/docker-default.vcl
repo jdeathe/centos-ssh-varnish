@@ -71,7 +71,7 @@ sub vcl_recv {
 		return (synth(403));
 	}
 
-	set req.http.X-Varnish-Grace = "none";
+	# set req.http.X-Varnish-Grace = "none";
 
 	if (req.method != "GET" &&
 		req.method != "HEAD" &&
