@@ -57,7 +57,8 @@ sub vcl_recv {
 		set req.http.X-Forwarded-For = client.ip;
 	}
 
-	if (std.port(server.ip) == 8443) {
+	if (std.port(server.ip) == 443 ||
+		std.port(server.ip) == 8443) {
 		# SSL Terminated upstream so indcate this with a custom header
 		set req.http.X-Forwarded-Port = "443";
 		set req.http.X-Forwarded-Proto = "https";
