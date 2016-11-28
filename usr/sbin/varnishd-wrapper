@@ -40,7 +40,7 @@ DAEMON_OPTS="-j unix,user=varnish,ccgroup=varnish
  -F
  -P /var/run/varnish.pid
  -a 0.0.0.0:80
- -a 0.0.0.0:8443
+ -a 0.0.0.0:8443,PROXY
  -f ${VARNISH_VCL_CONF:-/etc/varnish/docker-default.vcl}
  -T 127.0.0.1:6082
  -t ${VARNISH_TTL:-120}

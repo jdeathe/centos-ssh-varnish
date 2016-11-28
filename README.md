@@ -9,7 +9,7 @@ Docker Image including CentOS-6 6.8 x86_64 and Varnish Cache 4.1.
 
 #### centos-6
 
-The latest CentOS-6 based release can be pulled from the `centos-6` Docker tag. For a specific release tag the convention is `centos-6-1.2.0` for the [1.2.0](https://github.com/jdeathe/centos-ssh-varnish/tree/1.0.0) release tag.
+The latest CentOS-6 based release can be pulled from the `centos-6` Docker tag. For a specific release tag the convention is `centos-6-1.3.0` for the [1.3.0](https://github.com/jdeathe/centos-ssh-varnish/tree/1.3.0) release tag.
 
 Included in the build are the [SCL](https://www.softwarecollections.org/), [EPEL](http://fedoraproject.org/wiki/EPEL) and [IUS](https://ius.io) repositories. Installed packages include [OpenSSH](http://www.openssh.com/portable.html) secure shell, [vim-minimal](http://www.vim.org/), are installed along with python-setuptools, [supervisor](http://supervisord.org/) and [supervisor-stdout](https://github.com/coderanger/supervisor-stdout).
 
@@ -78,7 +78,7 @@ $ docker logs varnish.pool-1.1.1
 
 #### Environment Variables
 
-There are several environmental variables defined at runtime which allows the operator to customise the running container. This may become necessary under special circumstances and the following show those that are most likely to be considered for review, the rest should be left unaltered and for clarification refer to the [varnishd documentation](https://www.varnish-cache.org/docs/3.0/reference/varnishd.html).
+There are several environmental variables defined at runtime which allows the operator to customise the running container. This may become necessary under special circumstances and the following show those that are most likely to be considered for review, the rest should be left unaltered and for clarification refer to the [varnishd documentation](https://www.varnish-cache.org/docs/4.1/index.html).
 
 ##### VARNISH_VCL_CONF
 
@@ -94,4 +94,4 @@ Start at least `VARNISH_MIN_THREADS` but no more than `VARNISH_MAX_THREADS` work
 
 ##### VARNISH_STORAGE
 
-Use `VARNISH_STORAGE` to specify the storage backend. See the [varnishd documentation](https://www.varnish-cache.org/docs/3.0/reference/varnishd.html#storage-types) for the types and parameters available. The default is a file type backend but it is recommended to use malloc if there is enough RAM available.
+Use `VARNISH_STORAGE` to specify the storage backend. See the [varnishd documentation](https://www.varnish-cache.org/docs/4.1/reference/varnishd.html?highlight=storage%20types#storage-backend-options) for the types and parameters available. The default is a file type backend but it is recommended to use malloc if there is enough RAM available.
