@@ -63,7 +63,7 @@ ENV SSH_AUTOSTART_SSHD=false \
 # -----------------------------------------------------------------------------
 # Set image metadata
 # -----------------------------------------------------------------------------
-ARG RELEASE_VERSION="1.3.0"
+ARG RELEASE_VERSION="1.3.1"
 LABEL \
 	install="docker run \
 --rm \
