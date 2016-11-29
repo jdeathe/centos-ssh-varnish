@@ -121,6 +121,22 @@ sub vcl_recv {
 	return (hash);
 }
 
+sub vcl_hash {
+	hash_data(req.url);
+
+	if (req.http.host) {
+		hash_data(req.http.host);
+	} else {
+		hash_data(server.ip);
+	}
+
+	if (req.http.X-Forwarded-Proto) {
+		hash_data(req.http.X-Forwarded-Proto);
+	}
+
+	return (lookup);
+}
+
 sub vcl_hit {
 	if (obj.ttl >= 0s) {
 		return (deliver);
