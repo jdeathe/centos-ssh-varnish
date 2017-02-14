@@ -13,7 +13,12 @@ probe healthcheck {
 	.threshold = 3;
 	.initial = 2;
 	.expected_response = 200;
-	.url = "/";
+	.request =
+		"GET / HTTP/1.1"
+		"Host: localhost.localdomain"
+		"Connection: close"
+		"User-Agent: Varnish"
+		"Accept-Encoding: gzip, deflate";
 }
 
 # -----------------------------------------------------------------------------
