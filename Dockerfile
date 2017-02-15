@@ -4,7 +4,7 @@
 # CentOS-6, Varnish 4.1
 #
 # =============================================================================
-FROM jdeathe/centos-ssh:centos-6-1.7.3
+FROM jdeathe/centos-ssh:1.7.5
 
 MAINTAINER James Deathe <james.deathe@gmail.com>
 
@@ -12,8 +12,8 @@ MAINTAINER James Deathe <james.deathe@gmail.com>
 # Install Varnish Cache
 # -----------------------------------------------------------------------------
 RUN rpm --rebuilddb \
-	&& rpm --nosignature \
-		-i https://repo.varnish-cache.org/redhat/varnish-4.1.el6.rpm \
+	&& rpm --import https://repo.varnish-cache.org/GPG-key.txt \
+	&& rpm -i https://repo.varnish-cache.org/redhat/varnish-4.1.el6.rpm \
 	&& yum --setopt=tsflags=nodocs -y install \
 		varnish-4.1.3-1.el6 \
 	&& yum versionlock add \
