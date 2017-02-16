@@ -12,6 +12,7 @@ CentOS-6 6.8 x86_64 - Varnish Cache 4.1.
 - Adds a well formed request for backend health.
 - Adds a change log (`CHANGELOG.md`).
 - Adds support for semantic version numbered tags.
+- Adds minor code style changes to the Makefile for readability.
 
 ### 1.3.1 - 2016-11-28
 
