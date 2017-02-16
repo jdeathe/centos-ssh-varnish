@@ -13,6 +13,7 @@ CentOS-6 6.8 x86_64 - Varnish Cache 4.1.
 - Adds a change log (`CHANGELOG.md`).
 - Adds support for semantic version numbered tags.
 - Adds minor code style changes to the Makefile for readability.
+- Adds support for running `shpec` functional tests with `make test`.
 
 ### 1.3.1 - 2016-11-28
 
