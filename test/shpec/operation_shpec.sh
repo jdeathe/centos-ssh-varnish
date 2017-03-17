@@ -1,5 +1,4 @@
 readonly BOOTSTRAP_BACKOFF_TIME=3
-readonly DOCKER_HOSTNAME="localhost"
 readonly TEST_DIRECTORY="test"
 
 # These should ideally be a static value but hosts might be using this port so 
@@ -32,17 +31,7 @@ function docker_terminate_container ()
 
 function test_setup ()
 {
-	# Generate a self-signed certificate
-	openssl req \
-		-x509 \
-		-sha256 \
-		-nodes \
-		-newkey rsa:2048 \
-		-days 365 \
-		-subj "/CN=www.app-1.local" \
-		-keyout /tmp/www.app-1.local.pem \
-		-out /tmp/www.app-1.local.pem \
-	&> /dev/null
+	:
 }
 
 if [[ ! -d ${TEST_DIRECTORY} ]]; then
@@ -52,7 +41,7 @@ if [[ ! -d ${TEST_DIRECTORY} ]]; then
 	exit 1
 fi
 
-describe "jdeathe/centos-ssh-apache-php:latest"
+describe "jdeathe/centos-ssh-varnish:latest"
 	test_setup
 
 	describe "Basic Varnish operations"
@@ -66,8 +55,6 @@ describe "jdeathe/centos-ssh-apache-php:latest"
 		it "Runs a Varnish container named varnish.pool-1.1.1 on port ${DOCKER_PORT_MAP_TCP_80}."
 			local container_hostname=""
 			local container_port_80=""
-			local header_server=""
-			local header_x_service_uid=""
 
 			docker run -d \
 				--name varnish.pool-1.1.1 \
