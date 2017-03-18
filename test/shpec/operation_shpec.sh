@@ -7,7 +7,12 @@ DOCKER_PORT_MAP_TCP_22="${DOCKER_PORT_MAP_TCP_22:-NULL}"
 DOCKER_PORT_MAP_TCP_80="${DOCKER_PORT_MAP_TCP_80:-8000}"
 DOCKER_PORT_MAP_TCP_8443="${DOCKER_PORT_MAP_TCP_8443:-8443}"
 
-function docker_terminate_container ()
+function __setup ()
+{
+	:
+}
+
+function __terminate_container ()
 {
 	local CONTAINER="${1}"
 
@@ -29,33 +34,20 @@ function docker_terminate_container ()
 	fi
 }
 
-function test_setup ()
+function test_basic_operations ()
 {
-	:
-}
+	local container_hostname=""
+	local container_port_80=""
 
-if [[ ! -d ${TEST_DIRECTORY} ]]; then
-	printf -- \
-		"ERROR: Please run from the project root.\n" \
-		>&2
-	exit 1
-fi
-
-describe "jdeathe/centos-ssh-varnish:latest"
-	test_setup
+	trap "__terminate_container varnish.pool-1.1.1 &> /dev/null; exit 1" \
+		INT TERM EXIT
 
 	describe "Basic Varnish operations"
-		trap "docker_terminate_container varnish.pool-1.1.1 &> /dev/null; exit 1" \
-			INT TERM EXIT
-
-		docker_terminate_container \
+		__terminate_container \
 			varnish.pool-1.1.1 \
 		&> /dev/null
 
 		it "Runs a Varnish container named varnish.pool-1.1.1 on port ${DOCKER_PORT_MAP_TCP_80}."
-			local container_hostname=""
-			local container_port_80=""
-
 			docker run -d \
 				--name varnish.pool-1.1.1 \
 				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
@@ -88,11 +80,23 @@ describe "jdeathe/centos-ssh-varnish:latest"
 			fi
 		end
 
-		docker_terminate_container \
+		__terminate_container \
 			varnish.pool-1.1.1 \
 		&> /dev/null
-
-		trap - \
-			INT TERM EXIT
 	end
+
+	trap - \
+		INT TERM EXIT
+}
+
+if [[ ! -d ${TEST_DIRECTORY} ]]; then
+	printf -- \
+		"ERROR: Please run from the project root.\n" \
+		>&2
+	exit 1
+fi
+
+describe "jdeathe/centos-ssh-varnish:latest"
+	__setup
+	test_basic_operations
 end
