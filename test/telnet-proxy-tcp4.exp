@@ -1,0 +1,66 @@
+#!/usr/bin/env expect -f
+
+set env(HOME) /usr/local/bin
+set env(SHELL) /bin/bash
+set env(TERM) xterm
+set timeout 15
+
+# Source IP address
+set SOURCE_ADDRESS [lindex ${argv} 0]
+
+# Destination IP address
+set ADDRESS [lindex ${argv} 1]
+
+# Destination Port
+set PORT [lindex ${argv} 2]
+
+# HTTP Request. e.g. GET /index.html HTTP/1.1
+set REQUEST [lindex ${argv} 3]
+
+# HTTP request headers
+set HEADERS [lindex ${argv} 4]
+
+# Usage instructions if no arguments supplied.
+if { ${argc} < 2 } {
+	send_user "Usage: ${argv0} <source_address> <address> \[port\] \[request\] \[headers\]\n"
+	send_user "e.g.   ${argv0} 127.0.0.2 127.0.0.1 80 'GET /index.html HTTP/1.1' $'Host: www.localhost.localdomain\\nConnection: close'\n\n"
+	exit 1
+}
+
+# Default to destination port 80.
+if {
+	[info exists PORT]
+	&& "${PORT}" == ""
+} {
+	set PORT "80"
+}
+
+# Default HTTP/1.1 protocol HEAD request.
+if {
+	[info exists REQUEST]
+	&& "${REQUEST}" == ""
+} {
+	set REQUEST "HEAD / HTTP/1.1"
+}
+
+# Default request headers.
+if {
+	[info exists HEADERS]
+	&& "${HEADERS}" == ""
+} {
+	set HEADERS "Host: localhost.localdomain\rConnection: close"
+}
+
+log_user 0
+spawn telnet ${ADDRESS} ${PORT}
+expect {
+	default {
+		send_user "ERROR: Unable to connect to ${ADDRESS} ${PORT}\n"
+		exit 1
+	}
+	"'^]'." {
+		log_user 1
+		send "PROXY TCP4 ${SOURCE_ADDRESS} ${ADDRESS} 65535 ${PORT}\r${REQUEST}\r${HEADERS}\r\r"
+		expect eof
+	}
+}
