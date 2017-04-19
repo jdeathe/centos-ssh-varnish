@@ -167,7 +167,7 @@ function test_basic_operations ()
 
 		sleep ${BOOTSTRAP_BACKOFF_TIME}
 
-		it "Responds with a X-Varnish header to HTTP requests (port ${DOCKER_PORT_MAP_TCP_80})."
+		it "Responds with a X-Varnish header to HTTP requests (port ${container_port_80})."
 			header_x_varnish="$(
 				curl -sI \
 					-H "Host: ${backend_hostname}" \
@@ -233,7 +233,7 @@ function test_basic_operations ()
 
 		sleep ${BOOTSTRAP_BACKOFF_TIME}
 
-		it "Responds with a X-Varnish header for PROXY protocol requests (port ${DOCKER_PORT_MAP_TCP_8443})."
+		it "Responds with a X-Varnish header for PROXY protocol requests (port ${container_port_8443})."
 			printf -v \
 				request_headers \
 				-- 'Host: %s\n%s' \
@@ -244,7 +244,7 @@ function test_basic_operations ()
 				expect test/telnet-proxy-tcp4.exp \
 					127.0.0.2 \
 					127.0.0.1 \
-					${DOCKER_PORT_MAP_TCP_8443} \
+					${container_port_8443} \
 					'HEAD / HTTP/1.1' "${request_headers}" \
 					| sed -En '/^HTTP\/[0-9\.]+ [0-9]+/,$p' \
 					| sed '/Connection closed by foreign host./d' \
@@ -262,7 +262,7 @@ function test_basic_operations ()
 					expect test/telnet-proxy-tcp4.exp \
 						127.0.0.2 \
 						127.0.0.1 \
-						${DOCKER_PORT_MAP_TCP_8443} \
+						${container_port_8443} \
 						'HEAD / HTTP/1.1' "${request_headers}" \
 						| sed -En '/^HTTP\/[0-9\.]+ [0-9]+/,$p' \
 						| sed '/Connection closed by foreign host./d' \
@@ -280,7 +280,7 @@ function test_basic_operations ()
 				expect test/telnet-proxy-tcp4.exp \
 					127.0.0.2 \
 					127.0.0.1 \
-					${DOCKER_PORT_MAP_TCP_8443} \
+					${container_port_8443} \
 					'GET / HTTP/1.1' "${request_headers}" \
 					| sed -En '/^HTTP\/[0-9\.]+ [0-9]+/,$p' \
 					| sed '/Connection closed by foreign host./d' \
@@ -300,7 +300,7 @@ function test_basic_operations ()
 					expect test/telnet-proxy-tcp4.exp \
 						127.0.0.2 \
 						127.0.0.1 \
-						${DOCKER_PORT_MAP_TCP_8443} \
+						${container_port_8443} \
 						'GET / HTTP/1.1' "${request_headers}" \
 						| sed -En '/^HTTP\/[0-9\.]+ [0-9]+/,$p' \
 						| sed '/Connection closed by foreign host./d' \

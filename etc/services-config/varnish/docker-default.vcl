@@ -55,13 +55,14 @@ sub vcl_recv {
 	unset req.http.X-Forwarded-Port;
 	unset req.http.X-Forwarded-Proto;
 
-	if (std.port(server.ip) == 443 ||
-		std.port(server.ip) == 8443) {
+	if (std.port(server.ip) == 8443 ||
+		std.port(local.ip) == 8443) {
 		# SSL Terminated upstream so indcate this with a custom header
 		set req.http.X-Forwarded-Port = "443";
 		set req.http.X-Forwarded-Proto = "https";
 		set req.backend_hint = director_terminated_https.backend();
-	} else if (std.port(server.ip) == 80) {
+	} else if (std.port(server.ip) == 80 ||
+		std.port(local.ip) == 80) {
 		# Default to HTTP
 		set req.http.X-Forwarded-Port = "80";
 		set req.backend_hint = director_http.backend();
