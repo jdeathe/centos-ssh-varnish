@@ -196,7 +196,7 @@ function test_basic_operations ()
 					"^[0-9]+ [0-9]+$"
 			end
 
-			it "Returns the HTML document containing the {{BODY}} string."
+			it "Returns the backend's HTML document contents."
 				curl -s \
 					-H "Host: ${backend_hostname}" \
 					http://127.0.0.1:${container_port_80}/ \
@@ -207,31 +207,8 @@ function test_basic_operations ()
 				assert equal \
 					"${request_response}" \
 					0
-
-				it "Returns the HTML document containing the {{BODY}} string with the backend offline."
-					docker stop \
-						${backend_name} \
-					&> /dev/null
-
-					curl -s \
-						-H "Host: ${backend_hostname}" \
-						http://127.0.0.1:${container_port_80}/ \
-					| grep -q '{{BODY}}'
-
-					request_response="${?}"
-
-					docker start \
-						${backend_name} \
-					&> /dev/null
-
-					assert equal \
-						"${request_response}" \
-						0
-				end
 			end
 		end
-
-		sleep ${BOOTSTRAP_BACKOFF_TIME}
 
 		it "Responds with a X-Varnish header for PROXY protocol requests (port ${container_port_8443})."
 			printf -v \
@@ -276,7 +253,7 @@ function test_basic_operations ()
 					"^[0-9]+ [0-9]+$"
 			end
 			
-			it "Returns the HTML document containing the {{BODY}} string."
+			it "Returns the backend's HTML document contents."
 				expect test/telnet-proxy-tcp4.exp \
 					127.0.0.2 \
 					127.0.0.1 \
@@ -291,31 +268,44 @@ function test_basic_operations ()
 				assert equal \
 					"${request_response}" \
 					0
+			end
+		end
 
-				it "Returns the HTML document containing the {{BODY}} string with the backend offline."
-					docker stop \
-						${backend_name} \
-					&> /dev/null
+		it "Returns the backend's HTML document contents with the backend offline for HTTP requests (port ${container_port_80})."
+			docker stop \
+				${backend_name} \
+			&> /dev/null
 
-					expect test/telnet-proxy-tcp4.exp \
-						127.0.0.2 \
-						127.0.0.1 \
-						${container_port_8443} \
-						'GET / HTTP/1.1' "${request_headers}" \
-						| sed -En '/^HTTP\/[0-9\.]+ [0-9]+/,$p' \
-						| sed '/Connection closed by foreign host./d' \
-						| grep -q '{{BODY}}'
+			curl -s \
+				-H "Host: ${backend_hostname}" \
+				http://127.0.0.1:${container_port_80}/ \
+			| grep -q '{{BODY}}'
 
-					request_response="${?}"
+			request_response="${?}"
 
-					docker start \
-						${backend_name} \
-					&> /dev/null
+			assert equal \
+				"${request_response}" \
+				0
 
-					assert equal \
-						"${request_response}" \
-						0
-				end
+			it "Returns the backend's HTML document contents with the backend offline for PROXY protocol requests (port ${container_port_8443})."
+				expect test/telnet-proxy-tcp4.exp \
+					127.0.0.2 \
+					127.0.0.1 \
+					${container_port_8443} \
+					'GET / HTTP/1.1' "${request_headers}" \
+					| sed -En '/^HTTP\/[0-9\.]+ [0-9]+/,$p' \
+					| sed '/Connection closed by foreign host./d' \
+					| grep -q '{{BODY}}'
+
+				request_response="${?}"
+
+				docker start \
+					${backend_name} \
+				&> /dev/null
+
+				assert equal \
+					"${request_response}" \
+					0
 			end
 		end
 
