@@ -15,9 +15,11 @@ RUN rpm --rebuilddb \
 	&& rpm --import https://repo.varnish-cache.org/GPG-key.txt \
 	&& rpm -i https://repo.varnish-cache.org/redhat/varnish-4.1.el6.rpm \
 	&& yum --setopt=tsflags=nodocs -y install \
+		gcc-4.4.7-18.el6 \
 		varnish-4.1.3-1.el6 \
 	&& yum versionlock add \
-		varnish* \
+		varnish \
+		gcc \
 	&& rm -rf /var/cache/yum/* \
 	&& yum clean all
 
