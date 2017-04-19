@@ -16,29 +16,14 @@ function __destroy ()
 	# Destroy the backend container
 	__terminate_container \
 		${backend_name} \
-		&> /dev/null
+	&> /dev/null
 
 	# Destroy the bridge network
 	if [ -n $(docker network ls -q -f name="${backend_network}") ]; then
 		docker network rm \
 			${backend_network} \
-			&> /dev/null
+		&> /dev/null
 	fi
-}
-
-# Custom shpec matcher
-# Match a string with an Extended Regular Expression patten.
-function __shpec_matcher_egrep ()
-{
-	local pattern="${2:-}"
-	local string="${1:-}"
-
-	printf "%s" "${string}" \
-		| grep -qE "${pattern}" -
-
-	assert equal \
-		"${?}" \
-		0
 }
 
 function __setup ()
@@ -52,13 +37,13 @@ function __setup ()
 		docker network create \
 			--driver bridge \
 			${backend_network} \
-			&> /dev/null
+		&> /dev/null
 	fi
 
 	# Create the backend container
 	__terminate_container \
 		${backend_name} \
-		&> /dev/null
+	&> /dev/null
 	docker run \
 		--detach \
 		--name ${backend_name} \
@@ -66,7 +51,22 @@ function __setup ()
 		--network-alias ${backend_alias} \
 		--volume ${PWD}/test/fixture/apache/var/www/public_html:/opt/app/public_html:ro \
 		jdeathe/centos-ssh-apache-php:2.1.1 \
-		&> /dev/null
+	&> /dev/null
+}
+
+# Custom shpec matcher
+# Match a string with an Extended Regular Expression pattern.
+function __shpec_matcher_egrep ()
+{
+	local pattern="${2:-}"
+	local string="${1:-}"
+
+	printf "%s" "${string}" \
+		| grep -qE "${pattern}" -
+
+	assert equal \
+		"${?}" \
+		0
 }
 
 function __terminate_container ()
@@ -101,7 +101,7 @@ function test_basic_operations ()
 	local container_port_8443=""
 	local header_x_varnish=""
 	local request_headers=""
-	local request_response
+	local request_response=""
 
 	trap "__terminate_container varnish.pool-1.1.1 &> /dev/null; __destroy; exit 1" \
 		INT TERM EXIT
@@ -211,7 +211,7 @@ function test_basic_operations ()
 				it "Returns the HTML document containing the {{BODY}} string with the backend offline."
 					docker stop \
 						${backend_name} \
-						&> /dev/null
+					&> /dev/null
 
 					curl -s \
 						-H "Host: ${backend_hostname}" \
@@ -222,7 +222,7 @@ function test_basic_operations ()
 
 					docker start \
 						${backend_name} \
-						&> /dev/null
+					&> /dev/null
 
 					assert equal \
 						"${request_response}" \
@@ -295,7 +295,7 @@ function test_basic_operations ()
 				it "Returns the HTML document containing the {{BODY}} string with the backend offline."
 					docker stop \
 						${backend_name} \
-						&> /dev/null
+					&> /dev/null
 
 					expect test/telnet-proxy-tcp4.exp \
 						127.0.0.2 \
@@ -310,7 +310,7 @@ function test_basic_operations ()
 
 					docker start \
 						${backend_name} \
-						&> /dev/null
+					&> /dev/null
 
 					assert equal \
 						"${request_response}" \
