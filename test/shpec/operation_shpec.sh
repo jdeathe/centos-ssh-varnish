@@ -61,8 +61,12 @@ function __shpec_matcher_egrep ()
 	local pattern="${2:-}"
 	local string="${1:-}"
 
-	printf "%s" "${string}" \
-		| grep -qE "${pattern}" -
+	printf -- \
+		'%s' \
+		"${string}" \
+	| grep -qE -- \
+		"${pattern}" \
+		-
 
 	assert equal \
 		"${?}" \
@@ -102,6 +106,7 @@ function test_basic_operations ()
 	local header_x_varnish=""
 	local request_headers=""
 	local request_response=""
+	local varnish_logs=""
 
 	trap "__terminate_container varnish.pool-1.1.1 &> /dev/null; __destroy; exit 1" \
 		INT TERM EXIT
@@ -144,7 +149,7 @@ function test_basic_operations ()
 					"${DOCKER_PORT_MAP_TCP_80}"
 			fi
 			
-			it "Also exposes port ${DOCKER_PORT_MAP_TCP_8443} (PROXY protocol for terminated HTTPS)."
+			it "Exposes port ${DOCKER_PORT_MAP_TCP_8443} (PROXY protocol for terminated HTTPS)."
 				container_port_8443="$(
 					docker port \
 						varnish.pool-1.1.1 \
@@ -166,6 +171,42 @@ function test_basic_operations ()
 		end
 
 		sleep ${BOOTSTRAP_BACKOFF_TIME}
+
+		varnish_logs="$(
+			docker exec -t \
+				varnish.pool-1.1.1 \
+				cat /var/log/varnish.log
+		)"
+
+		it "Runs varnishd with a maximum of 1000 worker threads in each pool."
+			assert __shpec_matcher_egrep \
+				"${varnish_logs}" \
+				"[ ]+-p thread_pool_max=1000[^0-9]+"
+		end
+
+		it "Runs varnishd with a minimum of 50 worker threads in each pool."
+			assert __shpec_matcher_egrep \
+				"${varnish_logs}" \
+				"[ ]+-p thread_pool_min=50[^0-9]+"
+		end
+
+		it "Will destroy threads in excess of 50, which have been idle for at least 120 seconds."
+			assert __shpec_matcher_egrep \
+				"${varnish_logs}" \
+				"[ ]+-p thread_pool_timeout=120[^0-9]+"
+		end
+
+		it "Sets a 120 second default TTL when not assigned by a backend or VCL."
+			assert __shpec_matcher_egrep \
+				"${varnish_logs}" \
+				"[ ]+-t 120[^0-9]+"
+		end
+
+		it "Sets the default storage backend to file based with a size of 1G."
+			assert __shpec_matcher_egrep \
+				"${varnish_logs}" \
+				"[ ]+-s file,\/var\/lib\/varnish\/varnish_storage\.bin,1G"
+		end
 
 		it "Responds with a X-Varnish header to HTTP requests (port ${container_port_80})."
 			header_x_varnish="$(
