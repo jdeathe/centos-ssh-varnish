@@ -107,6 +107,8 @@ function test_basic_operations ()
 	local request_headers=""
 	local request_response=""
 	local varnish_logs=""
+	local varnish_vcl_loaded_hash=""
+	local varnish_vcl_source_hash=""
 
 	trap "__terminate_container varnish.pool-1.1.1 &> /dev/null; __destroy; exit 1" \
 		INT TERM EXIT
@@ -206,6 +208,40 @@ function test_basic_operations ()
 			assert __shpec_matcher_egrep \
 				"${varnish_logs}" \
 				"[ ]+-s file,\/var\/lib\/varnish\/varnish_storage\.bin,1G"
+		end
+
+		it "Loads the VCL file /etc/varnish/docker-default.vcl."
+			assert __shpec_matcher_egrep \
+				"${varnish_logs}" \
+				"[ ]+-f \/etc\/varnish\/docker-default\.vcl"
+
+			it "The loaded VCL file matches the source file."
+				varnish_vcl_loaded_hash="$(
+					docker exec \
+						varnish.pool-1.1.1 \
+						varnishadm vcl.show -v boot \
+					| sed -n '/\/\/ VCL\.SHOW/,/\/\/ VCL\.SHOW/p' \
+					| sed \
+						-e '/\/\/ VCL.SHOW.*/d' \
+						-e '/^$/d' \
+						-e '/#/d' \
+					| openssl sha1
+				)"
+
+				varnish_vcl_source_hash="$(
+					sed -n \
+						-e '/vcl/,$p' \
+						etc/services-config/varnish/docker-default.vcl \
+					| sed \
+						-e '/^$/d' \
+						-e '/#/d' \
+					| openssl sha1
+				)"
+
+				assert equal \
+					"${varnish_vcl_loaded_hash}" \
+					"${varnish_vcl_source_hash}"
+			end
 		end
 
 		it "Responds with a X-Varnish header to HTTP requests (port ${container_port_80})."
