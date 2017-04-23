@@ -273,6 +273,38 @@ function test_basic_operations ()
 					"^[0-9]+ [0-9]+$"
 			end
 
+			it "Returns a cache hit when Cookies, excluding PHPSESSID OR app-session, are sent in the request."
+				header_x_varnish="$(
+					curl -sI \
+						-H "Host: ${backend_hostname}" \
+						-b "key_1=data_1; key_2=data_2" \
+						http://127.0.0.1:${container_port_80}/ \
+					| grep '^X-Varnish: ' \
+					| cut -c 12- \
+					| tr -d '\r'
+				)"
+
+				assert __shpec_matcher_egrep \
+					"${header_x_varnish}" \
+					"^[0-9]+ [0-9]+$"
+			end
+
+			it "Returns a cache pass when the Cookie PHPSESSID OR app-session is sent in the request."
+				header_x_varnish="$(
+					curl -sI \
+						-H "Host: ${backend_hostname}" \
+						-b "key_1=data_1; PHPSESSID=data_2" \
+						http://127.0.0.1:${container_port_80}/ \
+					| grep '^X-Varnish: ' \
+					| cut -c 12- \
+					| tr -d '\r'
+				)"
+
+				assert __shpec_matcher_egrep \
+					"${header_x_varnish}" \
+					"^[0-9]+$"
+			end
+
 			it "Returns the backend's HTML document contents."
 				curl -s \
 					-H "Host: ${backend_hostname}" \
@@ -329,8 +361,66 @@ function test_basic_operations ()
 					"${header_x_varnish}" \
 					"^[0-9]+ [0-9]+$"
 			end
-			
+
+			it "Returns a cache hit when Cookies, excluding PHPSESSID OR app-session, are sent in the request."
+				printf -v \
+					request_headers \
+					-- 'Host: %s\n%s\n%s' \
+					"${backend_hostname}" \
+					"Cookie: key_1=data_1; key_2=data_2" \
+					"Connection: close"
+
+				header_x_varnish="$(
+					expect test/telnet-proxy-tcp4.exp \
+						127.0.0.2 \
+						127.0.0.1 \
+						${container_port_8443} \
+						'HEAD / HTTP/1.1' "${request_headers}" \
+						| sed -En '/^HTTP\/[0-9\.]+ [0-9]+/,$p' \
+						| sed '/Connection closed by foreign host./d' \
+						| grep '^X-Varnish: ' \
+						| cut -c 12- \
+						| tr -d '\r'
+				)"
+
+				assert __shpec_matcher_egrep \
+					"${header_x_varnish}" \
+					"^[0-9]+ [0-9]+$"
+			end
+
+			it "Returns a cache pass when the Cookie PHPSESSID OR app-session is sent in the request."
+				printf -v \
+					request_headers \
+					-- 'Host: %s\n%s\n%s' \
+					"${backend_hostname}" \
+					"Cookie: key_1=data_1; app-session=data_2" \
+					"Connection: close"
+
+				header_x_varnish="$(
+					expect test/telnet-proxy-tcp4.exp \
+						127.0.0.2 \
+						127.0.0.1 \
+						${container_port_8443} \
+						'HEAD / HTTP/1.1' "${request_headers}" \
+						| sed -En '/^HTTP\/[0-9\.]+ [0-9]+/,$p' \
+						| sed '/Connection closed by foreign host./d' \
+						| grep '^X-Varnish: ' \
+						| cut -c 12- \
+						| tr -d '\r'
+				)"
+
+				assert __shpec_matcher_egrep \
+					"${header_x_varnish}" \
+					"^[0-9]+$"
+			end
+
 			it "Returns the backend's HTML document contents."
+				printf -v \
+					request_headers \
+					-- 'Host: %s\n%s' \
+					"${backend_hostname}" \
+					"Connection: close"
+
 				expect test/telnet-proxy-tcp4.exp \
 					127.0.0.2 \
 					127.0.0.1 \
