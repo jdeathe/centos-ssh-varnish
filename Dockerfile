@@ -4,7 +4,7 @@
 # CentOS-6, Varnish 4.1
 #
 # =============================================================================
-FROM jdeathe/centos-ssh:1.7.5
+FROM jdeathe/centos-ssh:1.7.6
 
 MAINTAINER James Deathe <james.deathe@gmail.com>
 
