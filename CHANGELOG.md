@@ -9,6 +9,7 @@ CentOS-6 6.8 x86_64 - Varnish Cache 4.1.
 ### 1.3.2 - Unreleased
 
 - Updates source image to [1.7.6 tag](https://github.com/jdeathe/centos-ssh/releases/tag/1.7.6).
+- Updates Varnish to version 4.1.5.
 - Adds separation of HTTP and HTTPS content cache.
 - Adds a well formed request for backend health.
 - Adds a change log (`CHANGELOG.md`).
