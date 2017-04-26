@@ -4,7 +4,7 @@
 # CentOS-6, Varnish 4.1
 #
 # =============================================================================
-FROM jdeathe/centos-ssh:centos-6-1.7.3
+FROM jdeathe/centos-ssh:1.7.6
 
 MAINTAINER James Deathe <james.deathe@gmail.com>
 
@@ -12,12 +12,14 @@ MAINTAINER James Deathe <james.deathe@gmail.com>
 # Install Varnish Cache
 # -----------------------------------------------------------------------------
 RUN rpm --rebuilddb \
-	&& rpm --nosignature \
-		-i https://repo.varnish-cache.org/redhat/varnish-4.1.el6.rpm \
+	&& rpm --import https://repo.varnish-cache.org/GPG-key.txt \
+	&& rpm -i https://repo.varnish-cache.org/redhat/varnish-4.1.el6.rpm \
 	&& yum --setopt=tsflags=nodocs -y install \
-		varnish-4.1.3-1.el6 \
+		gcc-4.4.7-18.el6 \
+		varnish-4.1.5-1.el6 \
 	&& yum versionlock add \
-		varnish* \
+		varnish \
+		gcc \
 	&& rm -rf /var/cache/yum/* \
 	&& yum clean all
 
@@ -63,29 +65,29 @@ ENV SSH_AUTOSTART_SSHD=false \
 # -----------------------------------------------------------------------------
 # Set image metadata
 # -----------------------------------------------------------------------------
-ARG RELEASE_VERSION="1.3.1"
+ARG RELEASE_VERSION="1.3.2"
 LABEL \
 	install="docker run \
 --rm \
 --privileged \
 --volume /:/media/root \
-jdeathe/centos-ssh-varnish:centos-6-${RELEASE_VERSION} \
+jdeathe/centos-ssh-varnish:${RELEASE_VERSION} \
 /usr/sbin/scmi install \
 --chroot=/media/root \
 --name=\${NAME} \
---tag=centos-6-${RELEASE_VERSION}" \
+--tag=${RELEASE_VERSION}" \
 	uninstall="docker run \
 --rm \
 --privileged \
 --volume /:/media/root \
-jdeathe/centos-ssh-varnish:centos-6-${RELEASE_VERSION} \
+jdeathe/centos-ssh-varnish:${RELEASE_VERSION} \
 /usr/sbin/scmi uninstall \
 --chroot=/media/root \
 --name=\${NAME} \
---tag=centos-6-${RELEASE_VERSION}" \
+--tag=${RELEASE_VERSION}" \
 	org.deathe.name="centos-ssh-varnish" \
 	org.deathe.version="${RELEASE_VERSION}" \
-	org.deathe.release="jdeathe/centos-ssh-varnish:centos-6-${RELEASE_VERSION}" \
+	org.deathe.release="jdeathe/centos-ssh-varnish:${RELEASE_VERSION}" \
 	org.deathe.license="MIT" \
 	org.deathe.vendor="jdeathe" \
 	org.deathe.url="https://github.com/jdeathe/centos-ssh-varnish" \

@@ -166,12 +166,35 @@ sub vcl_deliver {
 	return (deliver);
 }
 
+# Errors: 413, 417 & 503
+sub vcl_synth {
+	set resp.http.Content-Type = "text/html; charset=utf-8";
+	set resp.http.Retry-After = "5";
+	synthetic( {"<!DOCTYPE html>
+<html>
+	<head>
+		<title>Error</title>
+		<style>
+			body{font-family:sans-serif;color:#666;background-color:#f1f1f1;margin:12%;max-width:50%;}
+			h1{color:#333;font-size:1.5em;font-weight:400;text-transform:uppercase;}
+		</style>
+	</head>
+	<body>
+		<h1>"} + resp.status + " " + resp.reason + {"</h1>
+		<p>"} + resp.reason + {"</p>
+		<p>XID: "} + req.xid + {"</p>
+	</body>
+</html>
+"} );
+	return (deliver);
+}
+
 # -----------------------------------------------------------------------------
 # Backend
 # -----------------------------------------------------------------------------
 sub vcl_backend_response {
 	# Keep objects beyond their ttl
-	set beresp.grace = 6h;
+	set beresp.grace = 12h;
 
 	if (beresp.ttl <= 0s ||
 		beresp.http.Set-Cookie ||
@@ -185,5 +208,27 @@ sub vcl_backend_response {
 		return (deliver);
 	}
 
+	return (deliver);
+}
+
+sub vcl_backend_error {
+	set beresp.http.Content-Type = "text/html; charset=utf-8";
+	set beresp.http.Retry-After = "5";
+	synthetic( {"<!DOCTYPE html>
+<html>
+	<style>
+		body{font-family:sans-serif;color:#666;background-color:#f1f1f1;margin:12%;max-width:50%;}
+		h1{color:#333;font-size:1.5em;font-weight:400;text-transform:uppercase;}
+	</style>
+	<head>
+		<title>Error</title>
+	</head>
+	<body>
+		<h1>"} + beresp.status + " " + beresp.reason + {"</h1>
+		<p>"} + beresp.reason + {"</p>
+		<p>XID: "} + bereq.xid + {"</p>
+	</body>
+</html>
+"} );
 	return (deliver);
 }
