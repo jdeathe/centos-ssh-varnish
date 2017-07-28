@@ -9,6 +9,7 @@ CentOS-6 6.8 x86_64 - Varnish Cache 4.1.
 ### 1.4.0 - Unreleased
 
 - Adds SHPEC_ROOT variable to Makefile.
+- Fixes issue with expect script failure when using `expect -f`.
 
 ### 1.3.2 - 2017-04-26
 
