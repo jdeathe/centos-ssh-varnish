@@ -4,11 +4,11 @@
 
 Summary of release changes for Version 1.
 
-CentOS-6 6.8 x86_64 - Varnish Cache 4.1.
+CentOS-6 6.9 x86_64 - Varnish Cache 4.1.
 
 ### 1.4.0 - Unreleased
 
-- Adds SHPEC_ROOT variable to Makefile.
+- Adds `SHPEC_ROOT` variable to Makefile.
 - Fixes issue with expect script failure when using `expect -f`.
 - Removes scmi; it's maintained [upstream](https://github.com/jdeathe/centos-ssh/blob/centos-6/src/usr/sbin/scmi).
 - Adds use of readonly variables for constants.
