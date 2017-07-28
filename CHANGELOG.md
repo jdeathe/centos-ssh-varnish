@@ -12,6 +12,7 @@ CentOS-6 6.8 x86_64 - Varnish Cache 4.1.
 - Fixes issue with expect script failure when using `expect -f`.
 - Removes scmi; it's maintained [upstream](https://github.com/jdeathe/centos-ssh/blob/centos-6/src/usr/sbin/scmi).
 - Adds use of readonly variables for constants.
+- Updates varnish to version 4.1.7.
 
 ### 1.3.2 - 2017-04-26
 

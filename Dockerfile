@@ -16,7 +16,7 @@ RUN rpm --rebuilddb \
 	&& rpm -i https://repo.varnish-cache.org/redhat/varnish-4.1.el6.rpm \
 	&& yum --setopt=tsflags=nodocs -y install \
 		gcc-4.4.7-18.el6 \
-		varnish-4.1.5-1.el6 \
+		varnish-4.1.7-1.el6 \
 	&& yum versionlock add \
 		varnish \
 		gcc \
