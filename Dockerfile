@@ -26,7 +26,7 @@ RUN rpm --rebuilddb \
 # -----------------------------------------------------------------------------
 # Copy files into place
 # -----------------------------------------------------------------------------
-ADD usr/sbin/varnishd-wrapper \
+ADD usr/sbin \
 	/usr/sbin/
 ADD opt/scmi \
 	/opt/scmi/
