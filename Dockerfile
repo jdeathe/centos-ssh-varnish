@@ -6,8 +6,6 @@
 # =============================================================================
 FROM jdeathe/centos-ssh:1.7.6
 
-MAINTAINER James Deathe <james.deathe@gmail.com>
-
 # -----------------------------------------------------------------------------
 # Install Varnish Cache
 # -----------------------------------------------------------------------------
@@ -67,6 +65,7 @@ ENV SSH_AUTOSTART_SSHD=false \
 # -----------------------------------------------------------------------------
 ARG RELEASE_VERSION="1.3.2"
 LABEL \
+	maintainer="James Deathe <james.deathe@gmail.com>" \
 	install="docker run \
 --rm \
 --privileged \
