@@ -16,6 +16,7 @@ CentOS-6 6.8 x86_64 - Varnish Cache 4.1.
 - Replaces deprecated Dockerfile `MAINTAINER` with a `LABEL`.
 - Updates source image to [1.8.1 tag](https://github.com/jdeathe/centos-ssh/releases/tag/1.8.1).
 - Adds a `src` directory for the image root files.
+- Adds `STARTUP_TIME` variable for the `logs-delayed` Makefile target.
 
 ### 1.3.2 - 2017-04-26
 
