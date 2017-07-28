@@ -15,6 +15,7 @@ CentOS-6 6.8 x86_64 - Varnish Cache 4.1.
 - Updates varnish to version 4.1.7.
 - Replaces deprecated Dockerfile `MAINTAINER` with a `LABEL`.
 - Updates source image to [1.8.1 tag](https://github.com/jdeathe/centos-ssh/releases/tag/1.8.1).
+- Adds a `src` directory for the image root files.
 
 ### 1.3.2 - 2017-04-26
 
