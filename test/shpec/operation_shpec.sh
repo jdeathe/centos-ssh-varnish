@@ -19,7 +19,7 @@ function __destroy ()
 	&> /dev/null
 
 	# Destroy the bridge network
-	if [ -n $(docker network ls -q -f name="${backend_network}") ]; then
+	if [[ -n $(docker network ls -q -f name="${backend_network}") ]]; then
 		docker network rm \
 			${backend_network} \
 		&> /dev/null
@@ -87,7 +87,7 @@ function __setup ()
 	local backend_release="2.2.0"
 
 	# Create the bridge network
-	if [ -z $(docker network ls -q -f name="${backend_network}") ]; then
+	if [[ -z $(docker network ls -q -f name="${backend_network}") ]]; then
 		docker network create \
 			--driver bridge \
 			${backend_network} \
