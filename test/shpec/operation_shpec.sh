@@ -1,4 +1,4 @@
-readonly BOOTSTRAP_BACKOFF_TIME=3
+readonly STARTUP_TIME=2
 readonly TEST_DIRECTORY="test"
 
 # These should ideally be a static value but hosts might be using this port so 
@@ -31,6 +31,7 @@ function __setup ()
 	local backend_alias="httpd_1"
 	local backend_name="apache-php.pool-1.1.1"
 	local backend_network="bridge_t1"
+	local backend_release="2.2.0"
 
 	# Create the bridge network
 	if [ -z $(docker network ls -q -f name="${backend_network}") ]; then
@@ -50,7 +51,7 @@ function __setup ()
 		--network ${backend_network} \
 		--network-alias ${backend_alias} \
 		--volume ${PWD}/test/fixture/apache/var/www/public_html:/opt/app/public_html:ro \
-		jdeathe/centos-ssh-apache-php:2.1.1 \
+		jdeathe/centos-ssh-apache-php:${backend_release} \
 	&> /dev/null
 }
 
@@ -110,7 +111,9 @@ function test_basic_operations ()
 	local varnish_vcl_source_hash=""
 	local -r varnish_vcl_source_path="src/etc/services-config/varnish/docker-default.vcl"
 
-	trap "__terminate_container varnish.pool-1.1.1 &> /dev/null; __destroy; exit 1" \
+	trap "__terminate_container varnish.pool-1.1.1 &> /dev/null; \
+		__destroy; \
+		exit 1" \
 		INT TERM EXIT
 
 	describe "Basic Varnish operations"
@@ -166,7 +169,7 @@ function test_basic_operations ()
 			end
 		end
 
-		sleep ${BOOTSTRAP_BACKOFF_TIME}
+		sleep ${STARTUP_TIME}
 
 		varnish_logs="$(
 			docker exec -t \
@@ -487,7 +490,9 @@ function test_custom_configuration ()
 	local varnish_vcl_loaded_hash=""
 	local varnish_vcl_source_hash=""
 
-	trap "__terminate_container varnish.pool-1.1.1 &> /dev/null; __destroy; exit 1" \
+	trap "__terminate_container varnish.pool-1.1.1 &> /dev/null; \
+		__destroy; \
+		exit 1" \
 		INT TERM EXIT
 
 	describe "Customised Varnish configuration"
@@ -532,7 +537,7 @@ function test_custom_configuration ()
 			fi
 		end
 
-		sleep ${BOOTSTRAP_BACKOFF_TIME}
+		sleep ${STARTUP_TIME}
 
 		varnish_logs="$(
 			docker exec -t \
