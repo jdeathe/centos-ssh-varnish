@@ -26,6 +26,59 @@ function __destroy ()
 	fi
 }
 
+function __get_container_port ()
+{
+	local container="${1:-}"
+	local port="${2:-}"
+	local value=""
+
+	value="$(
+		docker port \
+			${container} \
+			${port}
+	)"
+	value=${value##*:}
+
+	printf -- \
+		'%s' \
+		"${value}"
+}
+
+# container - Docker container name.
+# counter - Timeout counter in seconds.
+# process_pattern - Regular expression pattern used to match running process.
+function __is_container_ready ()
+{
+	local container="${1:-}"
+	local counter=$(
+		awk \
+			-v seconds="${2:-10}" \
+			'BEGIN { print 10 * seconds; }'
+	)
+	local process_pattern="${3:-}"
+
+	until (( counter == 0 )); do
+		sleep 0.1
+
+		if docker exec ${container} \
+			bash -c "ps axo command \
+				| grep -qE \"${process_pattern}\" \
+				&& varnishadm vcl.show -v boot" \
+			&> /dev/null
+		then
+			break
+		fi
+
+		(( counter -= 1 ))
+	done
+
+	if (( counter == 0 )); then
+		return 1
+	fi
+
+	return 0
+}
+
 function __setup ()
 {
 	local backend_alias="httpd_1"
@@ -131,11 +184,10 @@ function test_basic_operations ()
 			&> /dev/null
 
 			container_port_80="$(
-				docker port \
+				__get_container_port \
 					varnish.pool-1.1.1 \
 					80/tcp
 			)"
-			container_port_80=${container_port_80##*:}
 
 			if [[ ${DOCKER_PORT_MAP_TCP_80} == 0 ]] \
 				|| [[ -z ${DOCKER_PORT_MAP_TCP_80} ]]; then
@@ -150,11 +202,10 @@ function test_basic_operations ()
 
 			it "Exposes port ${DOCKER_PORT_MAP_TCP_8443} (PROXY protocol for terminated HTTPS)."
 				container_port_8443="$(
-					docker port \
+					__get_container_port \
 						varnish.pool-1.1.1 \
 						8443/tcp
 				)"
-				container_port_8443=${container_port_8443##*:}
 
 				if [[ ${DOCKER_PORT_MAP_TCP_8443} == 0 ]] \
 					|| [[ -z ${DOCKER_PORT_MAP_TCP_8443} ]]; then
@@ -169,7 +220,13 @@ function test_basic_operations ()
 			end
 		end
 
-		sleep ${STARTUP_TIME}
+		if ! __is_container_ready \
+			varnish.pool-1.1.1 \
+			${STARTUP_TIME} \
+			"/usr/sbin/varnishd "
+		then
+			exit 1
+		fi
 
 		varnish_logs="$(
 			docker exec -t \
@@ -519,11 +576,10 @@ function test_custom_configuration ()
 			&> /dev/null
 
 			container_port_80="$(
-				docker port \
+				__get_container_port \
 					varnish.pool-1.1.1 \
 					80/tcp
 			)"
-			container_port_80=${container_port_80##*:}
 
 			if [[ ${DOCKER_PORT_MAP_TCP_80} == 0 ]] \
 				|| [[ -z ${DOCKER_PORT_MAP_TCP_80} ]]; then
@@ -537,7 +593,13 @@ function test_custom_configuration ()
 			fi
 		end
 
-		sleep ${STARTUP_TIME}
+		if ! __is_container_ready \
+			varnish.pool-1.1.1 \
+			${STARTUP_TIME} \
+			"/usr/sbin/varnishd "
+		then
+			exit 1
+		fi
 
 		varnish_logs="$(
 			docker exec -t \
@@ -615,7 +677,7 @@ function test_custom_configuration ()
 	end
 
 	trap - \
-	INT TERM EXIT
+		INT TERM EXIT
 }
 
 if [[ ! -d ${TEST_DIRECTORY} ]]; then
