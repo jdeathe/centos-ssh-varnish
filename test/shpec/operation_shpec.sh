@@ -108,6 +108,7 @@ function test_basic_operations ()
 	local varnish_logs=""
 	local varnish_vcl_loaded_hash=""
 	local varnish_vcl_source_hash=""
+	local -r varnish_vcl_source_path="src/etc/services-config/varnish/docker-default.vcl"
 
 	trap "__terminate_container varnish.pool-1.1.1 &> /dev/null; __destroy; exit 1" \
 		INT TERM EXIT
@@ -224,7 +225,7 @@ function test_basic_operations ()
 				varnish_vcl_source_hash="$(
 					sed -n \
 						-e '/vcl/,$p' \
-						etc/services-config/varnish/docker-default.vcl \
+						"${varnish_vcl_source_path}" \
 					| sed \
 						-e '/^$/d' \
 						-e '/#/d' \
