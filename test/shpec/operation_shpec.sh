@@ -161,6 +161,7 @@ function test_basic_operations ()
 	local request_headers=""
 	local request_response=""
 	local varnish_logs=""
+	local varnish_parameter=""
 	local varnish_vcl_loaded_hash=""
 	local varnish_vcl_source_hash=""
 
@@ -238,36 +239,42 @@ function test_basic_operations ()
 					cat /var/log/varnish.log
 			)"
 
+			varnish_parameters="$(
+				docker exec -t \
+					varnish.pool-1.1.1 \
+					varnishadm param.show
+			)"
+
 			# Runs varnishd with a maximum of 1000 worker threads in each pool.
 			it "Sets thread_pool_max=1000."
 				assert __shpec_matcher_egrep \
-					"${varnish_logs}" \
-					"[ ]+-p thread_pool_max=1000[^0-9]+"
+					"${varnish_parameters}" \
+					"^thread_pool_max[ ]+1000[^0-9]+"
 			end
 
 			# Runs varnishd with a minimum of 50 worker threads in each pool.
 			it "Sets thread_pool_min=50."
 				assert __shpec_matcher_egrep \
-					"${varnish_logs}" \
-					"[ ]+-p thread_pool_min=50[^0-9]+"
+					"${varnish_parameters}" \
+					"^thread_pool_min[ ]+50[^0-9]+"
 			end
 
 			# Will destroy threads in excess of 50, which have been idle for at least 120 seconds.
 			it "Sets thread_pool_timeout=120."
 				assert __shpec_matcher_egrep \
-					"${varnish_logs}" \
-					"[ ]+-p thread_pool_timeout=120[^0-9]+"
+					"${varnish_parameters}" \
+					"^thread_pool_timeout[ ]+120[^0-9]+"
 			end
 
 			# Sets a 120 second default TTL when not assigned by a backend or VCL.
-			it "Sets a 120 second TTL."
+			it "Sets default_ttl=120."
 				assert __shpec_matcher_egrep \
-					"${varnish_logs}" \
-					"[ ]+-t 120[^0-9]+"
+					"${varnish_parameters}" \
+					"^default_ttl[ ]+120[^0-9]+"
 			end
 
 			# Sets the default storage backend to file based with a size of 1G.
-			it "Sets a 1G file backed storage."
+			it "Sets a 1G file storage."
 				assert __shpec_matcher_egrep \
 					"${varnish_logs}" \
 					"[ ]+-s file,\/var\/lib\/varnish\/varnish_storage\.bin,1G"
@@ -584,6 +591,7 @@ function test_custom_configuration ()
 	local -r backend_network="bridge_t1"
 	local container_port_80=""
 	local varnish_logs=""
+	local varnish_parameters=""
 	local varnish_vcl_loaded_hash=""
 	local varnish_vcl_source_hash=""
 
@@ -651,36 +659,42 @@ function test_custom_configuration ()
 					cat /var/log/varnish.log
 			)"
 
+			varnish_parameters="$(
+				docker exec -t \
+					varnish.pool-1.1.1 \
+					varnishadm param.show
+			)"
+
 			# Runs varnishd with a maximum of 5000 worker threads in each pool.
 			it "Sets thread_pool_max=5000."
 				assert __shpec_matcher_egrep \
-					"${varnish_logs}" \
-					"[ ]+-p thread_pool_max=5000[^0-9]+"
+					"${varnish_parameters}" \
+					"^thread_pool_max[ ]+5000[^0-9]+"
 			end
 
 			# Runs varnishd with a minimum of 100 worker threads in each pool.
 			it "Sets thread_pool_min=100."
 				assert __shpec_matcher_egrep \
-					"${varnish_logs}" \
-					"[ ]+-p thread_pool_min=100[^0-9]+"
+					"${varnish_parameters}" \
+					"^thread_pool_min[ ]+100[^0-9]+"
 			end
 
 			# Will destroy threads in excess of 100, which have been idle for at least 300 seconds.
 			it "Sets thread_pool_timeout=300."
 				assert __shpec_matcher_egrep \
-					"${varnish_logs}" \
-					"[ ]+-p thread_pool_timeout=300[^0-9]+"
+					"${varnish_parameters}" \
+					"^thread_pool_timeout[ ]+300[^0-9]+"
 			end
 
 			# Sets a 600 second default TTL when not assigned by a backend or VCL.
-			it "Sets a 600 second TTL."
+			it "Sets default_ttl=600."
 				assert __shpec_matcher_egrep \
-					"${varnish_logs}" \
-					"[ ]+-t 600[^0-9]+"
+					"${varnish_parameters}" \
+					"^default_ttl[ ]+600[^0-9]+"
 			end
 
 			# Sets the default storage backend to memory based with a size of 256M.
-			it "Sets a 256M memory backed storage."
+			it "Sets a 256M malloc storage."
 				assert __shpec_matcher_egrep \
 					"${varnish_logs}" \
 					"[ ]+-s malloc,256M"
