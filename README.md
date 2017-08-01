@@ -1,7 +1,7 @@
 centos-ssh-varnish
 ==================
 
-Docker Image including CentOS-6 6.8 x86_64 and Varnish Cache 4.1.
+Docker Image including CentOS-6 6.9 x86_64 and Varnish Cache 4.1.
 
 ## Overview & links
 
@@ -58,7 +58,9 @@ In the following example the http service is bound to port 8000 and offloaded ht
 ```
 $ docker stop varnish.pool-1.1.1 && \
   docker rm varnish.pool-1.1.1
-$ docker run -d -t \
+$ docker run \
+  --detach \
+  --tty \
   --name varnish.pool-1.1.1 \
   --publish 8000:80 \
   --publish 8500:8443 \

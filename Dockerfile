@@ -4,7 +4,7 @@
 # CentOS-6, Varnish 4.1
 #
 # =============================================================================
-FROM jdeathe/centos-ssh:1.7.6
+FROM jdeathe/centos-ssh:1.8.1
 
 # -----------------------------------------------------------------------------
 # Install Varnish Cache
@@ -12,7 +12,9 @@ FROM jdeathe/centos-ssh:1.7.6
 RUN rpm --rebuilddb \
 	&& rpm --import https://repo.varnish-cache.org/GPG-key.txt \
 	&& rpm -i https://repo.varnish-cache.org/redhat/varnish-4.1.el6.rpm \
-	&& yum --setopt=tsflags=nodocs -y install \
+	&& yum -y install \
+		--setopt=tsflags=nodocs \
+		--disableplugin=fastestmirror \
 		gcc-4.4.7-18.el6 \
 		varnish-4.1.7-1.el6 \
 	&& yum versionlock add \
@@ -24,15 +26,17 @@ RUN rpm --rebuilddb \
 # -----------------------------------------------------------------------------
 # Copy files into place
 # -----------------------------------------------------------------------------
-ADD usr/sbin \
+ADD src/usr/bin \
+	/usr/bin/
+ADD src/usr/sbin \
 	/usr/sbin/
-ADD opt/scmi \
+ADD src/opt/scmi \
 	/opt/scmi/
-ADD etc/services-config/supervisor/supervisord.d \
+ADD src/etc/services-config/supervisor/supervisord.d \
 	/etc/services-config/supervisor/supervisord.d/
-ADD etc/services-config/varnish/docker-default.vcl \
+ADD src/etc/services-config/varnish/docker-default.vcl \
 	/etc/services-config/varnish/
-ADD etc/systemd/system \
+ADD src/etc/systemd/system \
 	/etc/systemd/system/
 
 RUN ln -sf \
@@ -44,7 +48,7 @@ RUN ln -sf \
 	&& chmod 644 \
 		/etc/varnish/*.vcl \
 	&& chmod 700 \
-		/usr/sbin/varnishd-wrapper
+		/usr/{bin/healthcheck,sbin/varnishd-wrapper}
 
 EXPOSE 80 8443
 
@@ -90,6 +94,12 @@ jdeathe/centos-ssh-varnish:${RELEASE_VERSION} \
 	org.deathe.license="MIT" \
 	org.deathe.vendor="jdeathe" \
 	org.deathe.url="https://github.com/jdeathe/centos-ssh-varnish" \
-	org.deathe.description="CentOS-6 6.8 x86_64 - Varnish Cache 4.1."
+	org.deathe.description="CentOS-6 6.9 x86_64 - Varnish Cache 4.1."
+
+HEALTHCHECK \
+	--interval=0.5s \
+	--timeout=1s \
+	--retries=4 \
+	CMD ["/usr/bin/healthcheck"]
 
 CMD ["/usr/bin/supervisord", "--configuration=/etc/supervisord.conf"]

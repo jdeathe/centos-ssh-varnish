@@ -27,6 +27,9 @@ NO_CACHE="${NO_CACHE:-false}"
 # Directory path for release packages
 DIST_PATH="${DIST_PATH:-./dist}"
 
+# Number of seconds expected to complete container startup including bootstrap.
+STARTUP_TIME="${STARTUP_TIME:-2}"
+
 # Docker --ulimit settings
 ULIMIT_MEMLOCK="${ULIMIT_MEMLOCK:-82000}"
 ULIMIT_NOFILE="${ULIMIT_NOFILE:-131072}"

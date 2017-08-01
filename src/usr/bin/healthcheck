@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+# varnishd-wrapper
+if ! ps axo command \
+	| grep -qE '^/usr/sbin/varnishd '
+then
+	exit 1
+fi
+
+# ready status
+if ! varnishadm vcl.show -v boot \
+	&> /dev/null
+then
+	exit 1
+fi
+
+exit 0
