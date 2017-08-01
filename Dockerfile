@@ -26,6 +26,8 @@ RUN rpm --rebuilddb \
 # -----------------------------------------------------------------------------
 # Copy files into place
 # -----------------------------------------------------------------------------
+ADD src/usr/bin \
+	/usr/bin/
 ADD src/usr/sbin \
 	/usr/sbin/
 ADD src/opt/scmi \
@@ -46,7 +48,7 @@ RUN ln -sf \
 	&& chmod 644 \
 		/etc/varnish/*.vcl \
 	&& chmod 700 \
-		/usr/sbin/varnishd-wrapper
+		/usr/{bin/healthcheck,sbin/varnishd-wrapper}
 
 EXPOSE 80 8443
 
@@ -93,5 +95,11 @@ jdeathe/centos-ssh-varnish:${RELEASE_VERSION} \
 	org.deathe.vendor="jdeathe" \
 	org.deathe.url="https://github.com/jdeathe/centos-ssh-varnish" \
 	org.deathe.description="CentOS-6 6.9 x86_64 - Varnish Cache 4.1."
+
+HEALTHCHECK \
+	--interval=0.5s \
+	--timeout=1s \
+	--retries=4 \
+	CMD ["/usr/bin/healthcheck"]
 
 CMD ["/usr/bin/supervisord", "--configuration=/etc/supervisord.conf"]

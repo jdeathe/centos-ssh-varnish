@@ -18,6 +18,7 @@ CentOS-6 6.9 x86_64 - Varnish Cache 4.1.
 - Adds a `src` directory for the image root files.
 - Adds `STARTUP_TIME` variable for the `logs-delayed` Makefile target.
 - Adds test case output with improved readability.
+- Adds healthcheck.
 
 ### 1.3.2 - 2017-04-26
 
