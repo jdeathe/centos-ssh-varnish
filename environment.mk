@@ -3,6 +3,7 @@
 # -----------------------------------------------------------------------------
 DOCKER_USER := jdeathe
 DOCKER_IMAGE_NAME := centos-ssh-varnish
+SHPEC_ROOT := test/shpec
 
 # Tag validation patterns
 DOCKER_IMAGE_TAG_PATTERN := ^(latest|centos-6|((1|centos-6-1)\.[0-9]+\.[0-9]+))$
@@ -26,6 +27,9 @@ NO_CACHE ?= false
 
 # Directory path for release packages
 DIST_PATH ?= ./dist
+
+# Number of seconds expected to complete container startup including bootstrap.
+STARTUP_TIME ?= 2
 
 # Docker --ulimit settings
 ULIMIT_MEMLOCK ?= 82000

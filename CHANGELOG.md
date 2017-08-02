@@ -4,7 +4,22 @@
 
 Summary of release changes for Version 1.
 
-CentOS-6 6.8 x86_64 - Varnish Cache 4.1.
+CentOS-6 6.9 x86_64 - Varnish Cache 4.1.
+
+### 1.4.0 - 2017-08-03
+
+- Adds `SHPEC_ROOT` variable to Makefile.
+- Fixes issue with expect script failure when using `expect -f`.
+- Removes scmi; it's maintained [upstream](https://github.com/jdeathe/centos-ssh/blob/centos-6/src/usr/sbin/scmi).
+- Adds use of readonly variables for constants.
+- Updates varnish to version 4.1.7.
+- Replaces deprecated Dockerfile `MAINTAINER` with a `LABEL`.
+- Updates source image to [1.8.1 tag](https://github.com/jdeathe/centos-ssh/releases/tag/1.8.1).
+- Adds a `src` directory for the image root files.
+- Adds `STARTUP_TIME` variable for the `logs-delayed` Makefile target.
+- Adds test case output with improved readability.
+- Adds healthcheck.
+- Adds better test method for verification of running Varnish parameters.
 
 ### 1.3.2 - 2017-04-26
 

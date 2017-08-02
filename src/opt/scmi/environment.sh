@@ -1,12 +1,12 @@
 # -----------------------------------------------------------------------------
 # Constants
 # -----------------------------------------------------------------------------
-DOCKER_USER=jdeathe
-DOCKER_IMAGE_NAME=centos-ssh-varnish
+readonly DOCKER_USER=jdeathe
+readonly DOCKER_IMAGE_NAME=centos-ssh-varnish
 
 # Tag validation patterns
-DOCKER_IMAGE_TAG_PATTERN='^(latest|centos-6|((1|centos-6-1)\.[0-9]+\.[0-9]+))$'
-DOCKER_IMAGE_RELEASE_TAG_PATTERN='^(1|centos-6-1)\.[0-9]+\.[0-9]+$'
+readonly DOCKER_IMAGE_TAG_PATTERN='^(latest|centos-6|((1|centos-6-1)\.[0-9]+\.[0-9]+))$'
+readonly DOCKER_IMAGE_RELEASE_TAG_PATTERN='^(1|centos-6-1)\.[0-9]+\.[0-9]+$'
 
 # -----------------------------------------------------------------------------
 # Variables
@@ -26,6 +26,9 @@ NO_CACHE="${NO_CACHE:-false}"
 
 # Directory path for release packages
 DIST_PATH="${DIST_PATH:-./dist}"
+
+# Number of seconds expected to complete container startup including bootstrap.
+STARTUP_TIME="${STARTUP_TIME:-2}"
 
 # Docker --ulimit settings
 ULIMIT_MEMLOCK="${ULIMIT_MEMLOCK:-82000}"

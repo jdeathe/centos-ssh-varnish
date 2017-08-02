@@ -2,19 +2,20 @@
 
 function set_varnish_vcl_conf ()
 {
-	local VALUE="${1:-}"
-	local PLAIN_TEXT_PATTERN='.*vcl 4.0;.*'
-	local BASE64_PATTERN='^[A-Za-z0-9/+=]*$'
+	local -r pattern_base64='^[A-Za-z0-9/+=]*$'
+	local -r pattern_plain_text='.*vcl 4.0;.*'
 
-	if [[ -n ${VALUE} ]] && [[ ! -s ${VALUE} ]]; then
+	local value="${1:-}"
+
+	if [[ -n ${value} ]] && [[ ! -s ${value} ]]; then
 		# Decode base64 encoded values
-		if [[ ${VALUE} =~ ${BASE64_PATTERN} ]]; then
-			VALUE="$(
-				base64 -d -i <<< "${VALUE}"
+		if [[ ${value} =~ ${pattern_base64} ]]; then
+			value="$(
+				base64 -d -i <<< "${value}"
 			)"
 		fi
 
-		if [[ ! ${VALUE} =~ ${PLAIN_TEXT_PATTERN} ]]; then
+		if [[ ! ${value} =~ ${pattern_plain_text} ]]; then
 			printf -- \
 				'ERROR: Invalid VCL File\n' \
 				>&2
@@ -24,7 +25,7 @@ function set_varnish_vcl_conf ()
 
 		printf \
 			-- '%s' \
-			"${VALUE}" \
+			"${value}" \
 		> /etc/services-config/varnish/docker-default.vcl
 
 		unset VARNISH_VCL_CONF
@@ -33,10 +34,7 @@ function set_varnish_vcl_conf ()
 
 set_varnish_vcl_conf "${VARNISH_VCL_CONF}"
 
-VARNISHD=/usr/sbin/varnishd
-NICE=/bin/nice
-
-DAEMON_OPTS="-j unix,user=varnish,ccgroup=varnish
+readonly DAEMON_OPTS="-j unix,user=varnish,ccgroup=varnish
  -F
  -P /var/run/varnish.pid
  -a 0.0.0.0:80
@@ -50,8 +48,9 @@ DAEMON_OPTS="-j unix,user=varnish,ccgroup=varnish
  -S /etc/varnish/secret
  -s ${VARNISH_STORAGE:-file,/var/lib/varnish/varnish_storage.bin,1G}
 "
-
-NICENESS=${VARNISH_NICENESS:-10}
+readonly NICE=/bin/nice
+readonly NICENESS=${VARNISH_NICENESS:-10}
+readonly VARNISHD=/usr/sbin/varnishd
 
 printf -- \
 	"Starting Varnish Cache: \n%s\n" \
