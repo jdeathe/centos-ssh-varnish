@@ -10,6 +10,7 @@ CentOS-6 6.9 x86_64 - Varnish Cache 4.1.
 
 - Updates varnish to version 4.1.8.
 - Adds use of readonly variables for scmi constants.
+- Updates source image to [1.8.2 tag](https://github.com/jdeathe/centos-ssh/releases/tag/1.8.2).
 
 ### 1.4.0 - 2017-08-03
 
