@@ -6,6 +6,10 @@ Summary of release changes for Version 1.
 
 CentOS-6 6.9 x86_64 - Varnish Cache 4.1.
 
+### 1.4.1 - Unreleased
+
+- Updates varnish to version 4.1.8.
+
 ### 1.4.0 - 2017-08-03
 
 - Adds `SHPEC_ROOT` variable to Makefile.
