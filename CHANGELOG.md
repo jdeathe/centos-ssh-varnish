@@ -9,6 +9,7 @@ CentOS-6 6.9 x86_64 - Varnish Cache 4.1.
 ### 1.4.1 - Unreleased
 
 - Updates varnish to version 4.1.8.
+- Adds use of readonly variables for scmi constants.
 
 ### 1.4.0 - 2017-08-03
 
