@@ -66,7 +66,7 @@ ENV SSH_AUTOSTART_SSHD=false \
 # -----------------------------------------------------------------------------
 # Set image metadata
 # -----------------------------------------------------------------------------
-ARG RELEASE_VERSION="1.4.1"
+ARG RELEASE_VERSION="1.4.2"
 LABEL \
 	maintainer="James Deathe <james.deathe@gmail.com>" \
 	install="docker run \
