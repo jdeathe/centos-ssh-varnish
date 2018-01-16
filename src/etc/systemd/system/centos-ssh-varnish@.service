@@ -92,7 +92,7 @@ ExecStartPre=-/bin/bash -c \
 # Startup
 ExecStart=/bin/bash -c \
   "exec /usr/bin/docker run \
-    -t \
+    --tty \
     --name %p.%i \
     --ulimit memlock=${ULIMIT_MEMLOCK} \
     --ulimit nofile=${ULIMIT_NOFILE} \
