@@ -84,7 +84,7 @@ function __setup ()
 	local -r backend_alias="httpd_1"
 	local -r backend_name="apache-php.pool-1.1.1"
 	local -r backend_network="bridge_t1"
-	local backend_release="2.2.0"
+	local -r backend_release="2.2.3"
 
 	# Create the bridge network
 	if [[ -z $(docker network ls -q -f name="${backend_network}") ]]; then
@@ -98,6 +98,7 @@ function __setup ()
 	__terminate_container \
 		${backend_name} \
 	&> /dev/null
+
 	docker run \
 		--detach \
 		--name ${backend_name} \
