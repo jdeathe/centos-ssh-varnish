@@ -51,6 +51,7 @@ sub vcl_recv {
 		return (synth(405));
 	}
 
+	unset req.http.Proxy;
 	unset req.http.Forwarded;
 	unset req.http.X-Forwarded-Port;
 	unset req.http.X-Forwarded-Proto;

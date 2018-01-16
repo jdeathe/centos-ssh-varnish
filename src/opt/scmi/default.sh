@@ -38,7 +38,7 @@ if [[ ${DOCKER_PORT_MAP_TCP_8443} != NULL ]]; then
 fi
 
 # Common parameters of create and run targets
-DOCKER_CONTAINER_PARAMETERS="-t \
+DOCKER_CONTAINER_PARAMETERS="--tty \
 --name ${DOCKER_NAME} \
 --restart ${DOCKER_RESTART_POLICY} \
 --ulimit memlock=${ULIMIT_MEMLOCK} \
