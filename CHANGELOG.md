@@ -9,6 +9,7 @@ CentOS-6 6.9 x86_64 - Varnish Cache 4.1.
 ### 1.4.3 - Unreleased
 
 - Updates source image to [1.8.4 tag](https://github.com/jdeathe/centos-ssh/releases/tag/1.8.4).
+- Updates varnish to version 4.1.10.
 
 ### 1.4.2 - 2018-01-16
 

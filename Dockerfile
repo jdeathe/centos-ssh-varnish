@@ -15,7 +15,7 @@ RUN rpm --rebuilddb \
 		--setopt=tsflags=nodocs \
 		--disableplugin=fastestmirror \
 		gcc-4.4.7-18.el6 \
-		varnish-4.1.8-1.el6 \
+		varnish-4.1.10-1.el6 \
 	&& yum versionlock add \
 		varnish \
 		gcc \
