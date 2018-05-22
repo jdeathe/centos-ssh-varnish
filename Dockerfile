@@ -4,7 +4,7 @@
 # CentOS-6, Varnish 4.1
 #
 # =============================================================================
-FROM jdeathe/centos-ssh:1.8.3
+FROM jdeathe/centos-ssh:1.8.4
 
 # -----------------------------------------------------------------------------
 # Install Varnish Cache
@@ -15,7 +15,7 @@ RUN rpm --rebuilddb \
 		--setopt=tsflags=nodocs \
 		--disableplugin=fastestmirror \
 		gcc-4.4.7-18.el6 \
-		varnish-4.1.8-1.el6 \
+		varnish-4.1.10-1.el6 \
 	&& yum versionlock add \
 		varnish \
 		gcc \
@@ -66,7 +66,7 @@ ENV SSH_AUTOSTART_SSHD=false \
 # -----------------------------------------------------------------------------
 # Set image metadata
 # -----------------------------------------------------------------------------
-ARG RELEASE_VERSION="1.4.2"
+ARG RELEASE_VERSION="1.4.3"
 LABEL \
 	maintainer="James Deathe <james.deathe@gmail.com>" \
 	install="docker run \
