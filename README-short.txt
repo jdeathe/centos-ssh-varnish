@@ -1,1 +1,1 @@
-CentOS-6 6.9 x86_64 - Varnish Cache.
+CentOS-7 7.4.1708 x86_64 - Varnish Cache.
