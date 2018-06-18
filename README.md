@@ -87,7 +87,7 @@ $ docker logs varnish.pool-1.1.1
 
 #### Environment Variables
 
-There are several environmental variables defined at runtime which allows the operator to customise the running container. This may become necessary under special circumstances and the following show those that are most likely to be considered for review, the rest should be left unaltered and for clarification refer to the [varnishd documentation](https://www.varnish-cache.org/docs/4.1/index.html).
+There are several environmental variables defined at runtime which allows the operator to customise the running container. This may become necessary under special circumstances and the following show those that are most likely to be considered for review, the rest should be left unaltered and for clarification refer to the [varnishd documentation](https://www.varnish-cache.org/docs/6.0/index.html).
 
 ##### VARNISH_VCL_CONF
 
@@ -103,4 +103,4 @@ Start at least `VARNISH_MIN_THREADS` but no more than `VARNISH_MAX_THREADS` work
 
 ##### VARNISH_STORAGE
 
-Use `VARNISH_STORAGE` to specify the storage backend. See the [varnishd documentation](https://www.varnish-cache.org/docs/4.1/reference/varnishd.html?highlight=storage%20types#storage-backend-options) for the types and parameters available. The default is a file type backend but it is recommended to use malloc if there is enough RAM available.
+Use `VARNISH_STORAGE` to specify the storage backend. See the [varnishd documentation](https://varnish-cache.org/docs/6.0/reference/varnishd.html#storage-backend) for the types and parameters available. The default is a file type backend but it is recommended to use malloc if there is enough RAM available.
