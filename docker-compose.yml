@@ -52,7 +52,7 @@ services:
       APACHE_SERVER_NAME: "www.app.local"
       PHP_OPTIONS_SESSION_SAVE_HANDLER: "memcached"
       PHP_OPTIONS_SESSION_SAVE_PATH: "memcached:11211"
-    image: "jdeathe/centos-ssh-apache-php:3.0.0"
+    image: "jdeathe/centos-ssh-apache-php:3.0.1"
     networks:
       tier2:
         aliases:
