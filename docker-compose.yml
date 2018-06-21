@@ -2,8 +2,13 @@
 # Ref: https://docs.docker.com/compose/compose-file/
 #
 # docker-compose down
+# docker-compose build
 # docker-compose up -d
 #
+# Access Logs
+# docker-compose exec varnish varnishncsa
+#
+# CLI
 # docker-compose exec varnish varnishadm
 # ------------------------------------------------------------------------------
 version: "3.0"
@@ -15,6 +20,9 @@ networks:
     internal: true
 services:
   varnish:
+    build:
+      context: "."
+      dockerfile: "Dockerfile"
     depends_on:
       - "httpd_1"
     environment:
