@@ -8,11 +8,11 @@ Docker Image including:
 ## Overview & links
 
 - `centos-7`, `centos-7-2.0.0`, `2.0.0` [(centos-7/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-7/Dockerfile)
-- `centos-6`, `centos-6-1.4.3`, `1.4.3` [(centos-6/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/Dockerfile)
+- `centos-6`, `centos-6-1.4.4`, `1.4.4` [(centos-6/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/Dockerfile)
 
 #### centos-6
 
-The latest CentOS-6 based release can be pulled from the `centos-6` Docker tag. It is recommended to select a specific release tag - the convention is `centos-6-1.4.3`or `1.4.3` for the [1.4.3](https://github.com/jdeathe/centos-ssh-varnish/tree/1.4.3) release tag.
+The latest CentOS-6 based release can be pulled from the `centos-6` Docker tag. It is recommended to select a specific release tag - the convention is `centos-6-1.4.4`or `1.4.4` for the [1.4.4](https://github.com/jdeathe/centos-ssh-varnish/tree/1.4.4) release tag.
 
 #### centos-7
 
