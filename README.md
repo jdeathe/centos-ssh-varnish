@@ -2,8 +2,8 @@ centos-ssh-varnish
 ==================
 
 Docker Image including:
-- CentOS-6 6.9 x86_64 and Varnish Cache 4.1.
-- CentOS-7 7.4.1708 x86_64 and Varnish Cache 6.0.
+- CentOS-6 6.10 x86_64 and Varnish Cache 4.1.
+- CentOS-7 7.5.1804 x86_64 and Varnish Cache 6.0.
 
 ## Overview & links
 
