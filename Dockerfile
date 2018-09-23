@@ -4,7 +4,7 @@
 # CentOS-6, Varnish 4.1
 #
 # =============================================================================
-FROM jdeathe/centos-ssh:1.8.4
+FROM jdeathe/centos-ssh:1.9.0
 
 # -----------------------------------------------------------------------------
 # Install Varnish Cache
@@ -93,7 +93,7 @@ jdeathe/centos-ssh-varnish:${RELEASE_VERSION} \
 	org.deathe.license="MIT" \
 	org.deathe.vendor="jdeathe" \
 	org.deathe.url="https://github.com/jdeathe/centos-ssh-varnish" \
-	org.deathe.description="CentOS-6 6.9 x86_64 - Varnish Cache 4.1."
+	org.deathe.description="CentOS-6 6.10 x86_64 - Varnish Cache 4.1."
 
 HEALTHCHECK \
 	--interval=0.5s \
