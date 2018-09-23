@@ -6,6 +6,10 @@ Summary of release changes for Version 1.
 
 CentOS-6 6.9 x86_64 - Varnish Cache 4.1.
 
+### 1.5.0 - Unreleased
+
+- Updates `gcc` package to 4.4.7-23.
+
 ### 1.4.4 - 2018-06-22
 
 - Adds docker-compose example.
