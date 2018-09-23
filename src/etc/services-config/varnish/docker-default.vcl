@@ -101,7 +101,7 @@ sub vcl_recv {
 	}
 
 	# Cache static assets
-	if (req.url ~ "\.(gif|png|jpe?g|ico|swf|css|js|html?|txt)$") {
+	if (req.url ~ "\.(gif|png|jpe?g|ico|svg|css|js|html?|txt|eot|woff|woff2|ttf)$") {
 		unset req.http.Cookie;
 		return (hash);
 	}
