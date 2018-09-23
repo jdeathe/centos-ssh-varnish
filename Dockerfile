@@ -103,7 +103,7 @@ jdeathe/centos-ssh-varnish:${RELEASE_VERSION} \
 	org.deathe.license="MIT" \
 	org.deathe.vendor="jdeathe" \
 	org.deathe.url="https://github.com/jdeathe/centos-ssh-varnish" \
-	org.deathe.description="CentOS-7 7.4.1708 x86_64 - Varnish Cache 6.0."
+	org.deathe.description="CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.0."
 
 HEALTHCHECK \
 	--interval=0.5s \
