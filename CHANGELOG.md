@@ -9,6 +9,7 @@ CentOS-6 6.9 x86_64 - Varnish Cache 4.1.
 ### 1.5.0 - Unreleased
 
 - Updates `gcc` package to 4.4.7-23.
+- Updates source image to [1.9.0](https://github.com/jdeathe/centos-ssh/releases/tag/1.9.0).
 
 ### 1.4.4 - 2018-06-22
 
