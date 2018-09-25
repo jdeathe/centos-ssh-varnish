@@ -11,6 +11,7 @@ CentOS-6 6.10 x86_64 - Varnish Cache 4.1.
 - Updates `gcc` package to 4.4.7-23.
 - Updates source image to [1.9.0](https://github.com/jdeathe/centos-ssh/releases/tag/1.9.0).
 - Updates pattern for static assets to include web fonts and SVG images and remove SWF.
+- Removes response header that indicate Varnish version.
 
 ### 1.4.4 - 2018-06-22
 

@@ -163,6 +163,7 @@ sub vcl_hit {
 
 sub vcl_deliver {
 	# set resp.http.X-Varnish-Grace = req.http.X-Varnish-Grace;
+	unset resp.http.Via;
 
 	return (deliver);
 }

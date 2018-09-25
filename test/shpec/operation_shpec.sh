@@ -391,6 +391,20 @@ function test_basic_operations ()
 				end
 			end
 
+			it "Unsets the Via header."
+				header_via="$(
+					curl -sI \
+						-H "Host: ${backend_hostname}" \
+						http://127.0.0.1:${container_port_80}/ \
+					| grep '^Via: ' \
+					| tr -d '\r'
+				)"
+
+				assert equal \
+					"${header_via}" \
+					""
+			end
+
 			describe "Backend HTML content"
 				it "Is unaltered."
 					curl -s \
@@ -509,6 +523,20 @@ function test_basic_operations ()
 							"^[0-9]+$"
 					end
 				end
+			end
+
+			it "Unsets the Via header."
+				header_via="$(
+					curl -sI \
+						-H "Host: ${backend_hostname}" \
+						http://127.0.0.1:${container_port_80}/ \
+					| grep '^Via: ' \
+					| tr -d '\r'
+				)"
+
+				assert equal \
+					"${header_via}" \
+					""
 			end
 
 			describe "Backend HTML content"
