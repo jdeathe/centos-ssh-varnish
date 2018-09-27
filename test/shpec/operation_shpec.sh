@@ -775,6 +775,39 @@ function test_custom_configuration ()
 		&> /dev/null
 	end
 
+	describe "Configure autostart"
+		__terminate_container \
+			varnish.pool-1.1.1 \
+		&> /dev/null
+
+		docker run \
+			--detach \
+			--name varnish.pool-1.1.1 \
+			--env VARNISH_AUTOSTART_VARNISHD_WRAPPER=false \
+			jdeathe/centos-ssh-varnish:latest \
+		&> /dev/null
+
+		sleep ${STARTUP_TIME}
+
+		it "Can disable varnishd-wrapper."
+			docker ps \
+				--format "name=varnish.pool-1.1.1" \
+				--format "health=healthy" \
+			&> /dev/null \
+			&& docker top \
+				varnish.pool-1.1.1 \
+			| grep -qE '/usr/sbin/varnishd '
+
+			assert equal \
+				"${?}" \
+				"1"
+		end
+
+		__terminate_container \
+			varnish.pool-1.1.1 \
+		&> /dev/null
+	end
+
 	trap - \
 		INT TERM EXIT
 }

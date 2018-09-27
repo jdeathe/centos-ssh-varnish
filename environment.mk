@@ -53,6 +53,7 @@ SSH_USER_PASSWORD ?=
 SSH_USER_PASSWORD_HASHED ?= false
 SSH_USER_SHELL ?= /bin/bash
 # ------------------------------------------------------------------------------
+VARNISH_AUTOSTART_VARNISHD_WRAPPER ?= true
 VARNISH_MAX_THREADS ?= 1000
 VARNISH_MIN_THREADS ?= 50
 VARNISH_STORAGE ?= file,/var/lib/varnish/varnish_storage.bin,1G
