@@ -89,6 +89,10 @@ $ docker logs varnish.pool-1.1.1
 
 There are several environmental variables defined at runtime which allows the operator to customise the running container. This may become necessary under special circumstances and the following show those that are most likely to be considered for review, the rest should be left unaltered and for clarification refer to the [varnishd documentation](https://www.varnish-cache.org/docs/6.0/index.html).
 
+##### VARNISH_AUTOSTART_VARNISHD_WRAPPER
+
+It may be desirable to prevent the startup of the varnishd-wrapper script. For example, when using an image built from this Dockerfile as the source for another Dockerfile you could disable varnishd from startup by setting `VARNISH_AUTOSTART_VARNISHD_WRAPPER` to `false`.
+
 ##### VARNISH_VCL_CONF
 
 The Varnish VCL configuration file path, (or base64 encoded string of the configuration file contents), is set using `VARNISH_VCL_CONF`. The default configuration supplied is located at the path `/etc/varnish/docker-default.vcl`.
