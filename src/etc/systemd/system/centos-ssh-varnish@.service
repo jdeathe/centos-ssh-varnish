@@ -58,6 +58,7 @@ Environment="DOCKER_PORT_MAP_TCP_8443=8500"
 Environment="ULIMIT_MEMLOCK=82000"
 Environment="ULIMIT_NOFILE=131072"
 Environment="ULIMIT_NPROC=9223372036854775807"
+Environment="VARNISH_AUTOSTART_VARNISHD_WRAPPER=true"
 Environment="VARNISH_MAX_THREADS=1000"
 Environment="VARNISH_MIN_THREADS=50"
 Environment="VARNISH_STORAGE=file,/var/lib/varnish/varnish_storage.bin,1G"
@@ -97,6 +98,7 @@ ExecStart=/bin/bash -c \
     --ulimit memlock=${ULIMIT_MEMLOCK} \
     --ulimit nofile=${ULIMIT_NOFILE} \
     --ulimit nproc=${ULIMIT_NPROC} \
+    --env \"VARNISH_AUTOSTART_VARNISHD_WRAPPER=${VARNISH_AUTOSTART_VARNISHD_WRAPPER}\" \
     --env \"VARNISH_MAX_THREADS=${VARNISH_MAX_THREADS}\" \
     --env \"VARNISH_MIN_THREADS=${VARNISH_MIN_THREADS}\" \
     --env \"VARNISH_STORAGE=${VARNISH_STORAGE}\" \

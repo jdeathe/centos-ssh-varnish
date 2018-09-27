@@ -56,6 +56,7 @@ EXPOSE 80 8443
 # -----------------------------------------------------------------------------
 ENV SSH_AUTOSTART_SSHD=false \
 	SSH_AUTOSTART_SSHD_BOOTSTRAP=false \
+	VARNISH_AUTOSTART_VARNISHD_WRAPPER=true \
 	VARNISH_MAX_THREADS="1000" \
 	VARNISH_MIN_THREADS="50" \
 	VARNISH_STORAGE="file,/var/lib/varnish/varnish_storage.bin,1G" \
