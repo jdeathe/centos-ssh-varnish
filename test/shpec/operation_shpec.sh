@@ -874,6 +874,14 @@ function test_custom_configuration ()
 				exit 1
 			fi
 
+			if ! __is_container_ready \
+				varnish.pool-1.1.1 \
+				${STARTUP_TIME} \
+				"/usr/bin/varnishncsa "
+			then
+				exit 1
+			fi
+
 			container_port_80="$(
 				__get_container_port \
 					varnish.pool-1.1.1 \
@@ -886,6 +894,8 @@ function test_custom_configuration ()
 				-H "Host: ${backend_hostname}" \
 				http://127.0.0.1:${container_port_80}/ \
 			&> /dev/null
+
+			sleep 0.5
 
 			docker exec \
 				varnish.pool-1.1.1 \
@@ -925,6 +935,14 @@ function test_custom_configuration ()
 				exit 1
 			fi
 
+			if ! __is_container_ready \
+				varnish.pool-1.1.1 \
+				${STARTUP_TIME} \
+				"/usr/bin/varnishncsa "
+			then
+				exit 1
+			fi
+
 			container_port_80="$(
 				__get_container_port \
 					varnish.pool-1.1.1 \
@@ -937,6 +955,8 @@ function test_custom_configuration ()
 				-H "Host: ${backend_hostname}" \
 				http://127.0.0.1:${container_port_80}/ \
 			&> /dev/null
+
+			sleep 0.5
 
 			docker exec \
 				varnish.pool-1.1.1 \
