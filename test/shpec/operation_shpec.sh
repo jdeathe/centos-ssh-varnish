@@ -897,11 +897,12 @@ function test_custom_configuration ()
 			&> /dev/null
 
 			# Ensure log file exists before checking it's contents
+			counter=0
 			until docker exec \
 				varnish.pool-1.1.1 \
 				bash -c "[[ -f /var/log/varnish/access_log ]]"
 			do
-				if (( counter > 4 ))
+				if (( counter > 6 ))
 				then
 					break
 				fi
@@ -969,11 +970,12 @@ function test_custom_configuration ()
 			&> /dev/null
 
 			# Ensure log file exists before checking it's contents
+			counter=0
 			until docker exec \
 				varnish.pool-1.1.1 \
 				bash -c "[[ -f /var/log/varnish/access_log ]]"
 			do
-				if (( counter > 4 ))
+				if (( counter > 6 ))
 				then
 					break
 				fi
