@@ -13,6 +13,7 @@ CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.0.
 - Updates pattern for static assets to include web fonts and SVG images and remove SWF.
 - Removes response header that indicate Varnish version.
 - Adds `VARNISH_AUTOSTART_VARNISHD_WRAPPER` for disabling varnishd autostart.
+- Adds `VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER` to enable access logs.
 
 ### 2.0.0 - 2018-06-22
 
