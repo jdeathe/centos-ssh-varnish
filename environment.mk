@@ -60,5 +60,5 @@ VARNISH_MIN_THREADS ?= 50
 VARNISH_STORAGE ?= file,/var/lib/varnish/varnish_storage.bin,1G
 VARNISH_THREAD_TIMEOUT ?= 120
 VARNISH_TTL ?= 120
-VARNISH_VARNISHNCSA_FORMAT ?= "%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\""
+VARNISH_VARNISHNCSA_FORMAT ?= %h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\"
 VARNISH_VCL_CONF ?= /etc/varnish/docker-default.vcl
