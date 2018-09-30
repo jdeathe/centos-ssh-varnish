@@ -1067,6 +1067,105 @@ function test_healthcheck ()
 				varnish.pool-1.1.1 \
 			&> /dev/null
 		end
+
+		describe "Enable varnishncsa-wrapper"
+			__terminate_container \
+				varnish.pool-1.1.1 \
+			&> /dev/null
+
+			docker run \
+				--detach \
+				--name varnish.pool-1.1.1 \
+				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
+				--network ${backend_network} \
+				jdeathe/centos-ssh-varnish:latest \
+			&> /dev/null
+
+			it "Returns a valid status on starting."
+				health_status="$(
+					docker inspect \
+						--format='{{json .State.Health.Status}}' \
+						varnish.pool-1.1.1
+				)"
+
+				assert __shpec_matcher_egrep \
+					"${health_status}" \
+					"\"(starting|healthy|unhealthy)\""
+			end
+
+			sleep $(
+				awk \
+					-v interval_seconds="${interval_seconds}" \
+					-v startup_time="${STARTUP_TIME}" \
+					'BEGIN { print 1 + interval_seconds + startup_time; }'
+			)
+
+			it "Returns healthy after startup."
+				health_status="$(
+					docker inspect \
+						--format='{{json .State.Health.Status}}' \
+						varnish.pool-1.1.1
+				)"
+
+				assert equal \
+					"${health_status}" \
+					"\"healthy\""
+			end
+
+			__terminate_container \
+				varnish.pool-1.1.1 \
+			&> /dev/null
+		end
+
+		describe "Disable all"
+			__terminate_container \
+				varnish.pool-1.1.1 \
+			&> /dev/null
+
+			docker run \
+				--detach \
+				--name varnish.pool-1.1.1 \
+				--env VARNISH_AUTOSTART_VARNISHD_WRAPPER=false \
+				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=false \
+				--network ${backend_network} \
+				jdeathe/centos-ssh-varnish:latest \
+			&> /dev/null
+
+			it "Returns a valid status on starting."
+				health_status="$(
+					docker inspect \
+						--format='{{json .State.Health.Status}}' \
+						varnish.pool-1.1.1
+				)"
+
+				assert __shpec_matcher_egrep \
+					"${health_status}" \
+					"\"(starting|healthy|unhealthy)\""
+			end
+
+			sleep $(
+				awk \
+					-v interval_seconds="${interval_seconds}" \
+					-v startup_time="${STARTUP_TIME}" \
+					'BEGIN { print 1 + interval_seconds + startup_time; }'
+			)
+
+			it "Returns healthy after startup."
+				health_status="$(
+					docker inspect \
+						--format='{{json .State.Health.Status}}' \
+						varnish.pool-1.1.1
+				)"
+
+				assert equal \
+					"${health_status}" \
+					"\"healthy\""
+			end
+
+			__terminate_container \
+				varnish.pool-1.1.1 \
+			&> /dev/null
+		end
 	end
 
 	trap - \
