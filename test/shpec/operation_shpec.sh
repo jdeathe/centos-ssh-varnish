@@ -780,16 +780,19 @@ function test_custom_configuration ()
 			varnish.pool-1.1.1 \
 		&> /dev/null
 
-		docker run \
-			--detach \
-			--name varnish.pool-1.1.1 \
-			--env VARNISH_AUTOSTART_VARNISHD_WRAPPER=false \
-			jdeathe/centos-ssh-varnish:latest \
-		&> /dev/null
-
-		sleep ${STARTUP_TIME}
-
 		it "Can disable varnishd-wrapper."
+			docker run \
+				--detach \
+				--name varnish.pool-1.1.1 \
+				--env VARNISH_AUTOSTART_VARNISHD_WRAPPER=false \
+				--network ${backend_network} \
+				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
+				--publish ${DOCKER_PORT_MAP_TCP_8443}:8443 \
+				jdeathe/centos-ssh-varnish:latest \
+			&> /dev/null
+
+			sleep ${STARTUP_TIME}
+
 			docker ps \
 				--format "name=varnish.pool-1.1.1" \
 				--format "health=healthy" \
@@ -801,6 +804,43 @@ function test_custom_configuration ()
 			assert equal \
 				"${?}" \
 				"1"
+		end
+
+		__terminate_container \
+			varnish.pool-1.1.1 \
+		&> /dev/null
+
+		it "Can enable varnishncsa-wrapper."
+			docker run \
+				--detach \
+				--name varnish.pool-1.1.1 \
+				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
+				--network ${backend_network} \
+				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
+				--publish ${DOCKER_PORT_MAP_TCP_8443}:8443 \
+				jdeathe/centos-ssh-varnish:latest \
+			&> /dev/null
+
+			if ! __is_container_ready \
+				varnish.pool-1.1.1 \
+				${STARTUP_TIME} \
+				"/usr/sbin/varnishd " \
+				"varnishadm vcl.show -v boot"
+			then
+				exit 1
+			fi
+
+			docker ps \
+				--format "name=varnish.pool-1.1.1" \
+				--format "health=healthy" \
+			&> /dev/null \
+			&& docker top \
+				varnish.pool-1.1.1 \
+			| grep -qE '/usr/bin/varnishncsa '
+
+			assert equal \
+				"${?}" \
+				"0"
 		end
 
 		__terminate_container \
