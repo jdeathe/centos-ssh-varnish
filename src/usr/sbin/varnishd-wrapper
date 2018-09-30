@@ -53,7 +53,7 @@ readonly NICENESS=${VARNISH_NICENESS:-10}
 readonly VARNISHD=/usr/sbin/varnishd
 
 printf -- \
-	"Starting Varnish Cache: \n%s\n" \
+	"Starting Varnish Cache: \n %s\n" \
 	"${DAEMON_OPTS}"
 
 exec ${NICE} \
