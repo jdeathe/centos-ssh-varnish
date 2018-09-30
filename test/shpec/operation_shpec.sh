@@ -620,6 +620,7 @@ function test_basic_operations ()
 
 function test_custom_configuration ()
 {
+	local -r backend_hostname="localhost.localdomain"
 	local -r backend_network="bridge_t1"
 	local container_port_80=""
 	local varnish_logs=""
@@ -841,6 +842,113 @@ function test_custom_configuration ()
 			assert equal \
 				"${?}" \
 				"0"
+		end
+
+		__terminate_container \
+			varnish.pool-1.1.1 \
+		&> /dev/null
+	end
+
+	describe "Configure Apache/NCSA access log"
+		__terminate_container \
+			varnish.pool-1.1.1 \
+		&> /dev/null
+
+		it "Outputs in combined format"
+			docker run \
+				--detach \
+				--name varnish.pool-1.1.1 \
+				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
+				--network ${backend_network} \
+				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
+				--publish ${DOCKER_PORT_MAP_TCP_8443}:8443 \
+				jdeathe/centos-ssh-varnish:latest \
+			&> /dev/null
+
+			if ! __is_container_ready \
+				varnish.pool-1.1.1 \
+				${STARTUP_TIME} \
+				"/usr/sbin/varnishd " \
+				"varnishadm vcl.show -v boot"
+			then
+				exit 1
+			fi
+
+			container_port_80="$(
+				__get_container_port \
+					varnish.pool-1.1.1 \
+					80/tcp
+			)"
+
+			# Make a request to populate the access_log
+			curl -sI \
+				-X GET \
+				-H "Host: ${backend_hostname}" \
+				http://127.0.0.1:${container_port_80}/ \
+			&> /dev/null
+
+			docker exec \
+				varnish.pool-1.1.1 \
+				tail -n 1 \
+				/var/log/varnish/access_log \
+			| grep -qE \
+				"^.+ .+ .+ \[.+\] \"GET (?:http:\/\/${backend_hostname})?/ HTTP/1\.1\" 200 .+ \".+\" \".*\"$" \
+			&> /dev/null
+
+			assert equal \
+				"${?}" \
+				0
+		end
+
+		__terminate_container \
+			varnish.pool-1.1.1 \
+		&> /dev/null
+
+		it "Outputs in custom format"
+			docker run \
+				--detach \
+				--name varnish.pool-1.1.1 \
+				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
+				--env VARNISH_VARNISHNCSA_FORMAT="%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\" %{Varnish:hitmiss}x" \
+				--network ${backend_network} \
+				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
+				--publish ${DOCKER_PORT_MAP_TCP_8443}:8443 \
+				jdeathe/centos-ssh-varnish:latest \
+			&> /dev/null
+
+			if ! __is_container_ready \
+				varnish.pool-1.1.1 \
+				${STARTUP_TIME} \
+				"/usr/sbin/varnishd " \
+				"varnishadm vcl.show -v boot"
+			then
+				exit 1
+			fi
+
+			container_port_80="$(
+				__get_container_port \
+					varnish.pool-1.1.1 \
+					80/tcp
+			)"
+
+			# Make a request to populate the access_log
+			curl -sI \
+				-X GET \
+				-H "Host: ${backend_hostname}" \
+				http://127.0.0.1:${container_port_80}/ \
+			&> /dev/null
+
+			docker exec \
+				varnish.pool-1.1.1 \
+				tail -n 1 \
+				/var/log/varnish/access_log \
+			| grep -qE \
+				"^.+ .+ .+ \[.+\] \"GET (?:http:\/\/${backend_hostname})?/ HTTP/1\.1\" 200 .+ \".+\" \".*\" (?:hit|miss)+$" \
+			&> /dev/null
+
+			assert equal \
+				"${?}" \
+				0
 		end
 
 		__terminate_container \
