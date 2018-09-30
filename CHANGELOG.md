@@ -14,7 +14,7 @@ CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.0.
 - Removes response header that indicate Varnish version.
 - Adds `VARNISH_AUTOSTART_VARNISHD_WRAPPER` for disabling varnishd autostart.
 - Adds `VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER` to enable access logs.
-- Adds `VARNISH_VARNISHNCSA_FORMAT` to format the content of access logs.
+- Adds `VARNISH_VARNISHNCSA_FORMAT` set the access log format string.
 
 ### 2.0.0 - 2018-06-22
 
