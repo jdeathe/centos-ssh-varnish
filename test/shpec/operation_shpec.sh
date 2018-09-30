@@ -895,14 +895,12 @@ function test_custom_configuration ()
 				http://127.0.0.1:${container_port_80}/ \
 			&> /dev/null
 
-			sleep 0.5
-
 			docker exec \
 				varnish.pool-1.1.1 \
 				tail -n 1 \
 				/var/log/varnish/access_log \
 			| grep -qE \
-				"^.+ .+ .+ \[.+\] \"GET (?:http:\/\/${backend_hostname})?/ HTTP/1\.1\" 200 .+ \".+\" \".*\"$" \
+				"^.+ .+ .+ \[.+\] \"GET (http:\/\/${backend_hostname})?/ HTTP/1\.1\" 200 .+ \".+\" \".*\"$" \
 			&> /dev/null
 
 			assert equal \
@@ -956,14 +954,12 @@ function test_custom_configuration ()
 				http://127.0.0.1:${container_port_80}/ \
 			&> /dev/null
 
-			sleep 0.5
-
 			docker exec \
 				varnish.pool-1.1.1 \
 				tail -n 1 \
 				/var/log/varnish/access_log \
 			| grep -qE \
-				"^.+ .+ .+ \[.+\] \"GET (?:http:\/\/${backend_hostname})?/ HTTP/1\.1\" 200 .+ \".+\" \".*\" (?:hit|miss)+$" \
+				"^.+ .+ .+ \[.+\] \"GET (http:\/\/${backend_hostname})?/ HTTP/1\.1\" 200 .+ \".+\" \".*\" (hit|miss)+$" \
 			&> /dev/null
 
 			assert equal \
