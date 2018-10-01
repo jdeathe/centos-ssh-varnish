@@ -86,7 +86,7 @@ function __setup ()
 	local -r backend_alias="httpd_1"
 	local -r backend_name="apache-php.pool-1.1.1"
 	local -r backend_network="bridge_t1"
-	local -r backend_release="2.2.6"
+	local -r backend_release="2.3.0"
 
 	# Create the bridge network
 	if [[ -z $(docker network ls -q -f name="${backend_network}") ]]; then
@@ -620,8 +620,10 @@ function test_basic_operations ()
 
 function test_custom_configuration ()
 {
+	local -r backend_hostname="localhost.localdomain"
 	local -r backend_network="bridge_t1"
 	local container_port_80=""
+	local counter=0
 	local varnish_logs=""
 	local varnish_parameters=""
 	local varnish_vcl_loaded_hash=""
@@ -780,16 +782,19 @@ function test_custom_configuration ()
 			varnish.pool-1.1.1 \
 		&> /dev/null
 
-		docker run \
-			--detach \
-			--name varnish.pool-1.1.1 \
-			--env VARNISH_AUTOSTART_VARNISHD_WRAPPER=false \
-			jdeathe/centos-ssh-varnish:latest \
-		&> /dev/null
-
-		sleep ${STARTUP_TIME}
-
 		it "Can disable varnishd-wrapper."
+			docker run \
+				--detach \
+				--name varnish.pool-1.1.1 \
+				--env VARNISH_AUTOSTART_VARNISHD_WRAPPER=false \
+				--network ${backend_network} \
+				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
+				--publish ${DOCKER_PORT_MAP_TCP_8443}:8443 \
+				jdeathe/centos-ssh-varnish:latest \
+			&> /dev/null
+
+			sleep ${STARTUP_TIME}
+
 			docker ps \
 				--format "name=varnish.pool-1.1.1" \
 				--format "health=healthy" \
@@ -801,6 +806,194 @@ function test_custom_configuration ()
 			assert equal \
 				"${?}" \
 				"1"
+		end
+
+		__terminate_container \
+			varnish.pool-1.1.1 \
+		&> /dev/null
+
+		it "Can enable varnishncsa-wrapper."
+			docker run \
+				--detach \
+				--name varnish.pool-1.1.1 \
+				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
+				--network ${backend_network} \
+				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
+				--publish ${DOCKER_PORT_MAP_TCP_8443}:8443 \
+				jdeathe/centos-ssh-varnish:latest \
+			&> /dev/null
+
+			if ! __is_container_ready \
+				varnish.pool-1.1.1 \
+				${STARTUP_TIME} \
+				"/usr/sbin/varnishd " \
+				"varnishadm vcl.show -v boot"
+			then
+				exit 1
+			fi
+
+			docker ps \
+				--format "name=varnish.pool-1.1.1" \
+				--format "health=healthy" \
+			&> /dev/null \
+			&& docker top \
+				varnish.pool-1.1.1 \
+			| grep -qE '/usr/bin/varnishncsa '
+
+			assert equal \
+				"${?}" \
+				"0"
+		end
+
+		__terminate_container \
+			varnish.pool-1.1.1 \
+		&> /dev/null
+	end
+
+	describe "Configure Apache/NCSA access log"
+		__terminate_container \
+			varnish.pool-1.1.1 \
+		&> /dev/null
+
+		it "Outputs in combined format"
+			docker run \
+				--detach \
+				--name varnish.pool-1.1.1 \
+				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
+				--network ${backend_network} \
+				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
+				--publish ${DOCKER_PORT_MAP_TCP_8443}:8443 \
+				jdeathe/centos-ssh-varnish:latest \
+			&> /dev/null
+
+			if ! __is_container_ready \
+				varnish.pool-1.1.1 \
+				${STARTUP_TIME} \
+				"/usr/sbin/varnishd " \
+				"varnishadm vcl.show -v boot"
+			then
+				exit 1
+			fi
+
+			if ! __is_container_ready \
+				varnish.pool-1.1.1 \
+				${STARTUP_TIME} \
+				"/usr/bin/varnishncsa "
+			then
+				exit 1
+			fi
+
+			container_port_80="$(
+				__get_container_port \
+					varnish.pool-1.1.1 \
+					80/tcp
+			)"
+
+			# Make a request to populate the access_log
+			curl -sI \
+				-X GET \
+				-H "Host: ${backend_hostname}" \
+				http://127.0.0.1:${container_port_80}/ \
+			&> /dev/null
+
+			# Ensure log file exists before checking it's contents
+			counter=0
+			until docker exec \
+				varnish.pool-1.1.1 \
+				bash -c "[[ -f /var/log/varnish/access_log ]]"
+			do
+				if (( counter > 6 ))
+				then
+					break
+				fi
+				sleep 0.5
+				(( counter += 1 ))
+			done
+
+			docker exec \
+				varnish.pool-1.1.1 \
+				tail -n 1 \
+				/var/log/varnish/access_log \
+			| grep -qE \
+				"^.+ .+ .+ \[.+\] \"GET (http:\/\/${backend_hostname})?/ HTTP/1\.1\" 200 .+ \".+\" \".*\"$" \
+			&> /dev/null
+
+			assert equal \
+				"${?}" \
+				0
+		end
+
+		__terminate_container \
+			varnish.pool-1.1.1 \
+		&> /dev/null
+
+		it "Outputs in custom format"
+			docker run \
+				--detach \
+				--name varnish.pool-1.1.1 \
+				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
+				--env VARNISH_VARNISHNCSA_FORMAT="%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\" %{Varnish:hitmiss}x" \
+				--network ${backend_network} \
+				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
+				--publish ${DOCKER_PORT_MAP_TCP_8443}:8443 \
+				jdeathe/centos-ssh-varnish:latest \
+			&> /dev/null
+
+			if ! __is_container_ready \
+				varnish.pool-1.1.1 \
+				${STARTUP_TIME} \
+				"/usr/sbin/varnishd " \
+				"varnishadm vcl.show -v boot"
+			then
+				exit 1
+			fi
+
+			if ! __is_container_ready \
+				varnish.pool-1.1.1 \
+				${STARTUP_TIME} \
+				"/usr/bin/varnishncsa "
+			then
+				exit 1
+			fi
+
+			container_port_80="$(
+				__get_container_port \
+					varnish.pool-1.1.1 \
+					80/tcp
+			)"
+
+			# Make a request to populate the access_log
+			curl -sI \
+				-X GET \
+				-H "Host: ${backend_hostname}" \
+				http://127.0.0.1:${container_port_80}/ \
+			&> /dev/null
+
+			# Ensure log file exists before checking it's contents
+			counter=0
+			until docker exec \
+				varnish.pool-1.1.1 \
+				bash -c "[[ -f /var/log/varnish/access_log ]]"
+			do
+				if (( counter > 6 ))
+				then
+					break
+				fi
+				sleep 0.5
+				(( counter += 1 ))
+			done
+
+			docker exec \
+				varnish.pool-1.1.1 \
+				tail -n 1 \
+				/var/log/varnish/access_log \
+			| grep -qE \
+				"^.+ .+ .+ \[.+\] \"GET (http:\/\/${backend_hostname})?/ HTTP/1\.1\" 200 .+ \".+\" \".*\" (hit|miss)+$" \
+			&> /dev/null
+
+			assert equal \
+				"${?}" \
+				0
 		end
 
 		__terminate_container \
@@ -897,6 +1090,105 @@ function test_healthcheck ()
 				assert equal \
 					"${health_status}" \
 					"\"unhealthy\""
+			end
+
+			__terminate_container \
+				varnish.pool-1.1.1 \
+			&> /dev/null
+		end
+
+		describe "Enable varnishncsa-wrapper"
+			__terminate_container \
+				varnish.pool-1.1.1 \
+			&> /dev/null
+
+			docker run \
+				--detach \
+				--name varnish.pool-1.1.1 \
+				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
+				--network ${backend_network} \
+				jdeathe/centos-ssh-varnish:latest \
+			&> /dev/null
+
+			it "Returns a valid status on starting."
+				health_status="$(
+					docker inspect \
+						--format='{{json .State.Health.Status}}' \
+						varnish.pool-1.1.1
+				)"
+
+				assert __shpec_matcher_egrep \
+					"${health_status}" \
+					"\"(starting|healthy|unhealthy)\""
+			end
+
+			sleep $(
+				awk \
+					-v interval_seconds="${interval_seconds}" \
+					-v startup_time="${STARTUP_TIME}" \
+					'BEGIN { print 1 + interval_seconds + startup_time; }'
+			)
+
+			it "Returns healthy after startup."
+				health_status="$(
+					docker inspect \
+						--format='{{json .State.Health.Status}}' \
+						varnish.pool-1.1.1
+				)"
+
+				assert equal \
+					"${health_status}" \
+					"\"healthy\""
+			end
+
+			__terminate_container \
+				varnish.pool-1.1.1 \
+			&> /dev/null
+		end
+
+		describe "Disable all"
+			__terminate_container \
+				varnish.pool-1.1.1 \
+			&> /dev/null
+
+			docker run \
+				--detach \
+				--name varnish.pool-1.1.1 \
+				--env VARNISH_AUTOSTART_VARNISHD_WRAPPER=false \
+				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=false \
+				--network ${backend_network} \
+				jdeathe/centos-ssh-varnish:latest \
+			&> /dev/null
+
+			it "Returns a valid status on starting."
+				health_status="$(
+					docker inspect \
+						--format='{{json .State.Health.Status}}' \
+						varnish.pool-1.1.1
+				)"
+
+				assert __shpec_matcher_egrep \
+					"${health_status}" \
+					"\"(starting|healthy|unhealthy)\""
+			end
+
+			sleep $(
+				awk \
+					-v interval_seconds="${interval_seconds}" \
+					-v startup_time="${STARTUP_TIME}" \
+					'BEGIN { print 1 + interval_seconds + startup_time; }'
+			)
+
+			it "Returns healthy after startup."
+				health_status="$(
+					docker inspect \
+						--format='{{json .State.Health.Status}}' \
+						varnish.pool-1.1.1
+				)"
+
+				assert equal \
+					"${health_status}" \
+					"\"healthy\""
 			end
 
 			__terminate_container \
