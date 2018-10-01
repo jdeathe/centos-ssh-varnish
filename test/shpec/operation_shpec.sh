@@ -623,6 +623,7 @@ function test_custom_configuration ()
 	local -r backend_hostname="localhost.localdomain"
 	local -r backend_network="bridge_t1"
 	local container_port_80=""
+	local counter=0
 	local varnish_logs=""
 	local varnish_parameters=""
 	local varnish_vcl_loaded_hash=""
@@ -895,6 +896,20 @@ function test_custom_configuration ()
 				http://127.0.0.1:${container_port_80}/ \
 			&> /dev/null
 
+			# Ensure log file exists before checking it's contents
+			counter=0
+			until docker exec \
+				varnish.pool-1.1.1 \
+				bash -c "[[ -f /var/log/varnish/access_log ]]"
+			do
+				if (( counter > 6 ))
+				then
+					break
+				fi
+				sleep 0.5
+				(( counter += 1 ))
+			done
+
 			docker exec \
 				varnish.pool-1.1.1 \
 				tail -n 1 \
@@ -953,6 +968,20 @@ function test_custom_configuration ()
 				-H "Host: ${backend_hostname}" \
 				http://127.0.0.1:${container_port_80}/ \
 			&> /dev/null
+
+			# Ensure log file exists before checking it's contents
+			counter=0
+			until docker exec \
+				varnish.pool-1.1.1 \
+				bash -c "[[ -f /var/log/varnish/access_log ]]"
+			do
+				if (( counter > 6 ))
+				then
+					break
+				fi
+				sleep 0.5
+				(( counter += 1 ))
+			done
 
 			docker exec \
 				varnish.pool-1.1.1 \
