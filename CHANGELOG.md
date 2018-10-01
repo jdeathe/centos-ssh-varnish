@@ -6,7 +6,7 @@ Summary of release changes for Version 1.
 
 CentOS-6 6.10 x86_64 - Varnish Cache 4.1.
 
-### 1.5.0 - Unreleased
+### 1.5.0 - 2018-10-01
 
 - Updates `gcc` package to 4.4.7-23.
 - Updates source image to [1.9.0](https://github.com/jdeathe/centos-ssh/releases/tag/1.9.0).
