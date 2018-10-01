@@ -4,7 +4,17 @@
 
 Summary of release changes for Version 1.
 
-CentOS-6 6.9 x86_64 - Varnish Cache 4.1.
+CentOS-6 6.10 x86_64 - Varnish Cache 4.1.
+
+### 1.5.0 - 2018-10-01
+
+- Updates `gcc` package to 4.4.7-23.
+- Updates source image to [1.9.0](https://github.com/jdeathe/centos-ssh/releases/tag/1.9.0).
+- Updates pattern for static assets to include web fonts and SVG images and remove SWF.
+- Removes response header that indicate Varnish version.
+- Adds `VARNISH_AUTOSTART_VARNISHD_WRAPPER` for disabling varnishd autostart.
+- Adds `VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER` to enable access logs.
+- Adds `VARNISH_VARNISHNCSA_FORMAT` set the access log format string.
 
 ### 1.4.4 - 2018-06-22
 

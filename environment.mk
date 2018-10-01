@@ -53,9 +53,12 @@ SSH_USER_PASSWORD ?=
 SSH_USER_PASSWORD_HASHED ?= false
 SSH_USER_SHELL ?= /bin/bash
 # ------------------------------------------------------------------------------
+VARNISH_AUTOSTART_VARNISHD_WRAPPER ?= true
+VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER ?= false
 VARNISH_MAX_THREADS ?= 1000
 VARNISH_MIN_THREADS ?= 50
 VARNISH_STORAGE ?= file,/var/lib/varnish/varnish_storage.bin,1G
 VARNISH_THREAD_TIMEOUT ?= 120
 VARNISH_TTL ?= 120
+VARNISH_VARNISHNCSA_FORMAT ?= %h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\"
 VARNISH_VCL_CONF ?= /etc/varnish/docker-default.vcl

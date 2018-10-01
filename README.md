@@ -2,21 +2,21 @@ centos-ssh-varnish
 ==================
 
 Docker Image including:
-- CentOS-6 6.9 x86_64 and Varnish Cache 4.1.
-- CentOS-7 7.4.1708 x86_64 and Varnish Cache 6.0.
+- CentOS-6 6.10 x86_64 and Varnish Cache 4.1.
+- CentOS-7 7.5.1804 x86_64 and Varnish Cache 6.0.
 
 ## Overview & links
 
-- `centos-7`, `centos-7-2.0.0`, `2.0.0` [(centos-7/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-7/Dockerfile)
-- `centos-6`, `centos-6-1.4.4`, `1.4.4` [(centos-6/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/Dockerfile)
+- `centos-7`, `centos-7-2.1.0`, `2.1.0` [(centos-7/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-7/Dockerfile)
+- `centos-6`, `centos-6-1.5.0`, `1.5.0` [(centos-6/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/Dockerfile)
 
 #### centos-6
 
-The latest CentOS-6 based release can be pulled from the `centos-6` Docker tag. It is recommended to select a specific release tag - the convention is `centos-6-1.4.4`or `1.4.4` for the [1.4.4](https://github.com/jdeathe/centos-ssh-varnish/tree/1.4.4) release tag.
+The latest CentOS-6 based release can be pulled from the `centos-6` Docker tag. It is recommended to select a specific release tag - the convention is `centos-6-1.5.0`or `1.5.0` for the [1.5.0](https://github.com/jdeathe/centos-ssh-varnish/tree/1.5.0) release tag.
 
 #### centos-7
 
-The latest CentOS-7 based release can be pulled from the `centos-7` Docker tag. It is recommended to select a specific release tag - the convention is `centos-7-2.0.0`or `2.0.0` for the [2.0.0](https://github.com/jdeathe/centos-ssh-varnish/tree/2.0.0) release tag.
+The latest CentOS-7 based release can be pulled from the `centos-7` Docker tag. It is recommended to select a specific release tag - the convention is `centos-7-2.1.0`or `2.1.0` for the [2.1.0](https://github.com/jdeathe/centos-ssh-varnish/tree/2.1.0) release tag.
 
 Included in the build are the [SCL](https://www.softwarecollections.org/), [EPEL](http://fedoraproject.org/wiki/EPEL) and [IUS](https://ius.io) repositories. Installed packages include [OpenSSH](http://www.openssh.com/portable.html) secure shell, [vim-minimal](http://www.vim.org/), are installed along with python-setuptools, [supervisor](http://supervisord.org/) and [supervisor-stdout](https://github.com/coderanger/supervisor-stdout).
 
@@ -43,7 +43,7 @@ $ docker run -d -t \
   --name varnish.pool-1.1.1 \
   -p 80:80 \
   --add-host httpd_1:172.17.8.101 \
-  jdeathe/centos-ssh-varnish:1.4.4
+  jdeathe/centos-ssh-varnish:1.5.0
 ```
 
 Now you can verify it is initialised and running successfully by inspecting the container's logs.
@@ -76,7 +76,7 @@ $ docker run \
   --ulimit nproc=65535 \
   --env "VARNISH_STORAGE=malloc,256M" \
   --add-host httpd_1:172.17.8.101 \
-  jdeathe/centos-ssh-varnish:1.4.4
+  jdeathe/centos-ssh-varnish:1.5.0
 ```
 
 Now you can verify it is initialised and running successfully by inspecting the container's logs:
@@ -88,6 +88,14 @@ $ docker logs varnish.pool-1.1.1
 #### Environment Variables
 
 There are several environmental variables defined at runtime which allows the operator to customise the running container. This may become necessary under special circumstances and the following show those that are most likely to be considered for review, the rest should be left unaltered and for clarification refer to the [varnishd documentation](https://www.varnish-cache.org/docs/4.1/index.html).
+
+##### VARNISH_AUTOSTART_VARNISHD_WRAPPER
+
+It may be desirable to prevent the startup of the varnishd-wrapper script. For example, when using an image built from this Dockerfile as the source for another Dockerfile you could disable varnishd from startup by setting `VARNISH_AUTOSTART_VARNISHD_WRAPPER` to `false`.
+
+##### VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER
+
+Controls the startup of the varnishncsa-wrapper script which is not started by default. With `VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER` set to `true` the `varnishncsa` process is started to output the Varnish in-memory logs to the log file `/var/log/varnish/access_log`. Logs are in Apache / NCSA combined log format unless altered using `VARNISH_VARNISHNCSA_FORMAT`.
 
 ##### VARNISH_VCL_CONF
 
@@ -104,3 +112,7 @@ Start at least `VARNISH_MIN_THREADS` but no more than `VARNISH_MAX_THREADS` work
 ##### VARNISH_STORAGE
 
 Use `VARNISH_STORAGE` to specify the storage backend. See the [varnishd documentation](https://varnish-cache.org/docs/4.1/reference/varnishd.html#storage-backend) for the types and parameters available. The default is a file type backend but it is recommended to use malloc if there is enough RAM available.
+
+##### VARNISH_VARNISHNCSA_FORMAT
+
+When `VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER` is set to `true` then `VARNISH_VARNISHNCSA_FORMAT` can be used to set the output log [format string](https://varnish-cache.org/docs/6.0/reference/varnishncsa.html#format).
