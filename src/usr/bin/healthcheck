@@ -1,15 +1,31 @@
 #!/usr/bin/env bash
 
+if [[ ${VARNISH_AUTOSTART_VARNISHD_WRAPPER} == false ]] \
+	&& [[ ${VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER} == false ]]
+then
+	exit 0
+fi
+
 # varnishd-wrapper
-if ! ps axo command \
+if [[ ${VARNISH_AUTOSTART_VARNISHD_WRAPPER} == true ]] \
+	&& ! ps axo command \
 	| grep -qE '^/usr/sbin/varnishd '
 then
 	exit 1
 fi
 
 # ready status
-if ! varnishadm vcl.show -v boot \
+if [[ ${VARNISH_AUTOSTART_VARNISHD_WRAPPER} == true ]] \
+	&& ! varnishadm vcl.show -v boot \
 	&> /dev/null
+then
+	exit 1
+fi
+
+# varnishncsa-wrapper
+if [[ ${VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER} == true ]] \
+	&& ! ps axo command \
+	| grep -qE '^/usr/bin/varnishncsa '
 then
 	exit 1
 fi

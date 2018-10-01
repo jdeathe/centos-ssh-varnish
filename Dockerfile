@@ -4,7 +4,7 @@
 # CentOS-7, Varnish 6.0
 #
 # =============================================================================
-FROM jdeathe/centos-ssh:2.3.2
+FROM jdeathe/centos-ssh:2.4.0
 
 # -----------------------------------------------------------------------------
 # Install Varnish Cache
@@ -25,7 +25,7 @@ RUN { \
 		--setopt=tsflags=nodocs \
 		--disableplugin=fastestmirror \
 		gcc-4.8.5-28.el7_5.1 \
-		varnish-6.0.0-1.el7 \
+		varnish-6.0.1-1.el7 \
 	&& yum versionlock add \
 		varnish \
 		gcc \
@@ -52,12 +52,15 @@ RUN ln -sf \
 		/etc/services-config/supervisor/supervisord.d/varnishd-wrapper.conf \
 		/etc/supervisord.d/varnishd-wrapper.conf \
 	&& ln -sf \
+		/etc/services-config/supervisor/supervisord.d/varnishncsa-wrapper.conf \
+		/etc/supervisord.d/varnishncsa-wrapper.conf \
+	&& ln -sf \
 		/etc/services-config/varnish/docker-default.vcl \
 		/etc/varnish/docker-default.vcl \
 	&& chmod 644 \
 		/etc/varnish/*.vcl \
 	&& chmod 700 \
-		/usr/{bin/healthcheck,sbin/varnishd-wrapper}
+		/usr/{bin/healthcheck,sbin/{varnishd,varnishncsa}-wrapper}
 
 EXPOSE 80 8443
 
@@ -66,17 +69,20 @@ EXPOSE 80 8443
 # -----------------------------------------------------------------------------
 ENV SSH_AUTOSTART_SSHD=false \
 	SSH_AUTOSTART_SSHD_BOOTSTRAP=false \
+	VARNISH_AUTOSTART_VARNISHD_WRAPPER=true \
+	VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=false \
 	VARNISH_MAX_THREADS="1000" \
 	VARNISH_MIN_THREADS="50" \
 	VARNISH_STORAGE="file,/var/lib/varnish/varnish_storage.bin,1G" \
 	VARNISH_THREAD_TIMEOUT="120" \
 	VARNISH_TTL="120" \
+	VARNISH_VARNISHNCSA_FORMAT="%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\"" \
 	VARNISH_VCL_CONF="/etc/varnish/docker-default.vcl"
 
 # -----------------------------------------------------------------------------
 # Set image metadata
 # -----------------------------------------------------------------------------
-ARG RELEASE_VERSION="2.0.0"
+ARG RELEASE_VERSION="2.1.0"
 LABEL \
 	maintainer="James Deathe <james.deathe@gmail.com>" \
 	install="docker run \
@@ -103,7 +109,7 @@ jdeathe/centos-ssh-varnish:${RELEASE_VERSION} \
 	org.deathe.license="MIT" \
 	org.deathe.vendor="jdeathe" \
 	org.deathe.url="https://github.com/jdeathe/centos-ssh-varnish" \
-	org.deathe.description="CentOS-7 7.4.1708 x86_64 - Varnish Cache 6.0."
+	org.deathe.description="CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.0."
 
 HEALTHCHECK \
 	--interval=0.5s \

@@ -101,7 +101,7 @@ sub vcl_recv {
 	}
 
 	# Cache static assets
-	if (req.url ~ "\.(gif|png|jpe?g|ico|swf|css|js|html?|txt)$") {
+	if (req.url ~ "\.(gif|png|jpe?g|ico|svg|css|js|html?|txt|eot|woff|woff2|ttf)$") {
 		unset req.http.Cookie;
 		return (hash);
 	}
@@ -163,6 +163,7 @@ sub vcl_hit {
 
 sub vcl_deliver {
 	# set resp.http.X-Varnish-Grace = req.http.X-Varnish-Grace;
+	unset resp.http.Via;
 
 	return (deliver);
 }
