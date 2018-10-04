@@ -34,7 +34,10 @@ function set_varnish_vcl_conf ()
 
 set_varnish_vcl_conf "${VARNISH_VCL_CONF}"
 
-readonly DAEMON_OPTS="-j unix,user=varnish,ccgroup=varnish
+readonly VARNISH_GROUP="varnish"
+readonly VARNISH_SECRET_PATH="/etc/varnish/secret"
+readonly VARNISH_USER="varnish"
+readonly DAEMON_OPTS="-j unix,user=${VARNISH_USER},ccgroup=${VARNISH_GROUP}
  -F
  -P /var/run/varnish.pid
  -a 0.0.0.0:80
@@ -45,12 +48,33 @@ readonly DAEMON_OPTS="-j unix,user=varnish,ccgroup=varnish
  -p thread_pool_min=${VARNISH_MIN_THREADS:-50}
  -p thread_pool_max=${VARNISH_MAX_THREADS:-1000}
  -p thread_pool_timeout=${VARNISH_THREAD_TIMEOUT:-120}
- -S /etc/varnish/secret
+ -S ${VARNISH_SECRET_PATH}
  -s ${VARNISH_STORAGE:-file,/var/lib/varnish/varnish_storage.bin,1G}
 "
-readonly NICE=/bin/nice
-readonly NICENESS=${VARNISH_NICENESS:-10}
-readonly VARNISHD=/usr/sbin/varnishd
+readonly NICE="/bin/nice"
+readonly NICENESS="${VARNISH_NICENESS:-10}"
+readonly VARNISHD="/usr/sbin/varnishd"
+
+# Ensure the secret PSK file is present.
+if [[ ! -s ${VARNISH_SECRET_PATH} ]]
+then
+	printf -- \
+		"Populating Varnish PSK secret file.\n" \
+
+	dd \
+		if=/dev/random \
+		of="${VARNISH_SECRET_PATH}" \
+		count=1 \
+	&> /dev/null
+
+	chown \
+		${VARNISH_USER}:${VARNISH_GROUP} \
+		"${VARNISH_SECRET_PATH}"
+
+	chmod \
+		640 \
+		"${VARNISH_SECRET_PATH}"
+fi
 
 printf -- \
 	"Starting Varnish Cache: \n %s\n" \
