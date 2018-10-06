@@ -1018,11 +1018,11 @@ function test_healthcheck ()
 		INT TERM EXIT
 
 	describe "Healthcheck"
-		describe "Default configuration"
-			__terminate_container \
-				varnish.pool-1.1.1 \
-			&> /dev/null
+		__terminate_container \
+			varnish.pool-1.1.1 \
+		&> /dev/null
 
+		describe "Default configuration"
 			docker run \
 				--detach \
 				--name varnish.pool-1.1.1 \
@@ -1091,17 +1091,13 @@ function test_healthcheck ()
 					"${health_status}" \
 					"\"unhealthy\""
 			end
-
-			__terminate_container \
-				varnish.pool-1.1.1 \
-			&> /dev/null
 		end
 
-		describe "Enable varnishncsa-wrapper"
-			__terminate_container \
-				varnish.pool-1.1.1 \
-			&> /dev/null
+		__terminate_container \
+			varnish.pool-1.1.1 \
+		&> /dev/null
 
+		describe "Enable varnishncsa-wrapper"
 			docker run \
 				--detach \
 				--name varnish.pool-1.1.1 \
@@ -1140,17 +1136,13 @@ function test_healthcheck ()
 					"${health_status}" \
 					"\"healthy\""
 			end
-
-			__terminate_container \
-				varnish.pool-1.1.1 \
-			&> /dev/null
 		end
 
-		describe "Disable all"
-			__terminate_container \
-				varnish.pool-1.1.1 \
-			&> /dev/null
+		__terminate_container \
+			varnish.pool-1.1.1 \
+		&> /dev/null
 
+		describe "Disable all"
 			docker run \
 				--detach \
 				--name varnish.pool-1.1.1 \
