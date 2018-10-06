@@ -10,6 +10,11 @@ readonly NICE=/bin/nice
 readonly NICENESS=${VARNISHNCSA_NICENESS:-10}
 readonly VARNISHNCSA=/usr/bin/varnishncsa
 
+while true; do
+	sleep 0.1
+	[[ -e /var/lock/subsys/varnishd-wrapper ]] || break
+done
+
 printf -- \
 	"Starting Varnish Apache/NCSA logging: \n %s -F %s\n\n" \
 	"${DAEMON_OPTS}" \
