@@ -11,6 +11,8 @@ if [[ ${VARNISH_AUTOSTART_VARNISHD_WRAPPER} == true ]] \
 	&& ! ps axo command \
 	| grep -qE '^/usr/sbin/varnishd '
 then
+	printf -- \
+		"Process varnishd not running."
 	exit 1
 fi
 
@@ -19,6 +21,8 @@ if [[ ${VARNISH_AUTOSTART_VARNISHD_WRAPPER} == true ]] \
 	&& ! varnishadm vcl.show -v boot \
 	&> /dev/null
 then
+	printf -- \
+		"Varnish not booted."
 	exit 1
 fi
 
@@ -27,6 +31,8 @@ if [[ ${VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER} == true ]] \
 	&& ! ps axo command \
 	| grep -qE '^/usr/bin/varnishncsa '
 then
+	printf -- \
+		"Process varnishncsa not running."
 	exit 1
 fi
 
