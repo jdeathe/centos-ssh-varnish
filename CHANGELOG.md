@@ -6,6 +6,11 @@ Summary of release changes for Version 1.
 
 CentOS-6 6.10 x86_64 - Varnish Cache 4.1.
 
+### 1.5.1 - 2018-10-09
+
+- Adds lockfile to ensure varnishd is started before varnishncsa.
+- Adds failure messages to healthcheck script.
+
 ### 1.5.0 - 2018-10-01
 
 - Updates `gcc` package to 4.4.7-23.

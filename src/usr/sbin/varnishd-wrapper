@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Create lock file
+touch /var/lock/subsys/varnishd-wrapper
+
 function set_varnish_vcl_conf ()
 {
 	local -r pattern_base64='^[A-Za-z0-9/+=]*$'
@@ -48,13 +51,16 @@ readonly DAEMON_OPTS="-j unix,user=varnish,ccgroup=varnish
  -S /etc/varnish/secret
  -s ${VARNISH_STORAGE:-file,/var/lib/varnish/varnish_storage.bin,1G}
 "
-readonly NICE=/bin/nice
-readonly NICENESS=${VARNISH_NICENESS:-10}
-readonly VARNISHD=/usr/sbin/varnishd
+readonly NICE="/bin/nice"
+readonly NICENESS="${VARNISH_NICENESS:-10}"
+readonly VARNISHD="/usr/sbin/varnishd"
 
 printf -- \
 	"Starting Varnish Cache: \n %s\n" \
 	"${DAEMON_OPTS}"
+
+# Release lock file
+rm -f /var/lock/subsys/varnishd-wrapper
 
 exec ${NICE} \
 	-n ${NICENESS} \
