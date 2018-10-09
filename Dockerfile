@@ -1,7 +1,7 @@
 # =============================================================================
 # jdeathe/centos-ssh-varnish
 #
-# CentOS-7, Varnish 6.0
+# CentOS-7, Varnish 6.1
 #
 # =============================================================================
 FROM jdeathe/centos-ssh:2.4.0
@@ -10,22 +10,22 @@ FROM jdeathe/centos-ssh:2.4.0
 # Install Varnish Cache
 # -----------------------------------------------------------------------------
 RUN { \
-		echo '[varnishcache_varnish60]'; \
-		echo 'name=varnishcache_varnish60'; \
-		echo 'baseurl=https://packagecloud.io/varnishcache/varnish60/el/7/$basearch'; \
+		echo '[varnishcache_varnish61]'; \
+		echo 'name=varnishcache_varnish61'; \
+		echo 'baseurl=https://packagecloud.io/varnishcache/varnish61/el/7/$basearch'; \
 		echo 'repo_gpgcheck=1'; \
 		echo 'gpgcheck=0'; \
 		echo 'enabled=1'; \
-		echo 'gpgkey=https://packagecloud.io/varnishcache/varnish60/gpgkey'; \
+		echo 'gpgkey=https://packagecloud.io/varnishcache/varnish61/gpgkey'; \
 		echo 'sslverify=1'; \
 		echo 'sslcacert=/etc/pki/tls/certs/ca-bundle.crt'; \
 		echo 'metadata_expire=300'; \
-	} > /etc/yum.repos.d/varnishcache_varnish60.repo \
+	} > /etc/yum.repos.d/varnishcache_varnish61.repo \
 	&& yum -y install \
 		--setopt=tsflags=nodocs \
 		--disableplugin=fastestmirror \
 		gcc-4.8.5-28.el7_5.1 \
-		varnish-6.0.1-1.el7 \
+		varnish-6.1.0-1.el7 \
 	&& yum versionlock add \
 		varnish \
 		gcc \
@@ -82,7 +82,7 @@ ENV SSH_AUTOSTART_SSHD=false \
 # -----------------------------------------------------------------------------
 # Set image metadata
 # -----------------------------------------------------------------------------
-ARG RELEASE_VERSION="2.1.0"
+ARG RELEASE_VERSION="2.2.0"
 LABEL \
 	maintainer="James Deathe <james.deathe@gmail.com>" \
 	install="docker run \
@@ -109,7 +109,7 @@ jdeathe/centos-ssh-varnish:${RELEASE_VERSION} \
 	org.deathe.license="MIT" \
 	org.deathe.vendor="jdeathe" \
 	org.deathe.url="https://github.com/jdeathe/centos-ssh-varnish" \
-	org.deathe.description="CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.0."
+	org.deathe.description="CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.1."
 
 HEALTHCHECK \
 	--interval=0.5s \

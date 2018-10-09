@@ -889,23 +889,24 @@ function test_custom_configuration ()
 					80/tcp
 			)"
 
-			# Make a request to populate the access_log
-			curl -sI \
-				-X GET \
-				-H "Host: ${backend_hostname}" \
-				http://127.0.0.1:${container_port_80}/ \
-			&> /dev/null
-
 			# Ensure log file exists before checking it's contents
 			counter=0
 			until docker exec \
 				varnish.pool-1.1.1 \
-				bash -c "[[ -f /var/log/varnish/access_log ]]"
+				bash -c "[[ -s /var/log/varnish/access_log ]]"
 			do
 				if (( counter > 6 ))
 				then
 					break
 				fi
+
+				# Make a request to populate the access_log
+				curl -sI \
+					-X GET \
+					-H "Host: ${backend_hostname}" \
+					http://127.0.0.1:${container_port_80}/ \
+				&> /dev/null
+
 				sleep 0.5
 				(( counter += 1 ))
 			done
@@ -962,23 +963,24 @@ function test_custom_configuration ()
 					80/tcp
 			)"
 
-			# Make a request to populate the access_log
-			curl -sI \
-				-X GET \
-				-H "Host: ${backend_hostname}" \
-				http://127.0.0.1:${container_port_80}/ \
-			&> /dev/null
-
 			# Ensure log file exists before checking it's contents
 			counter=0
 			until docker exec \
 				varnish.pool-1.1.1 \
-				bash -c "[[ -f /var/log/varnish/access_log ]]"
+				bash -c "[[ -s /var/log/varnish/access_log ]]"
 			do
 				if (( counter > 6 ))
 				then
 					break
 				fi
+
+				# Make a request to populate the access_log
+				curl -sI \
+					-X GET \
+					-H "Host: ${backend_hostname}" \
+					http://127.0.0.1:${container_port_80}/ \
+				&> /dev/null
+
 				sleep 0.5
 				(( counter += 1 ))
 			done
@@ -1018,11 +1020,11 @@ function test_healthcheck ()
 		INT TERM EXIT
 
 	describe "Healthcheck"
-		describe "Default configuration"
-			__terminate_container \
-				varnish.pool-1.1.1 \
-			&> /dev/null
+		__terminate_container \
+			varnish.pool-1.1.1 \
+		&> /dev/null
 
+		describe "Default configuration"
 			docker run \
 				--detach \
 				--name varnish.pool-1.1.1 \
@@ -1091,17 +1093,13 @@ function test_healthcheck ()
 					"${health_status}" \
 					"\"unhealthy\""
 			end
-
-			__terminate_container \
-				varnish.pool-1.1.1 \
-			&> /dev/null
 		end
 
-		describe "Enable varnishncsa-wrapper"
-			__terminate_container \
-				varnish.pool-1.1.1 \
-			&> /dev/null
+		__terminate_container \
+			varnish.pool-1.1.1 \
+		&> /dev/null
 
+		describe "Enable varnishncsa-wrapper"
 			docker run \
 				--detach \
 				--name varnish.pool-1.1.1 \
@@ -1140,17 +1138,13 @@ function test_healthcheck ()
 					"${health_status}" \
 					"\"healthy\""
 			end
-
-			__terminate_container \
-				varnish.pool-1.1.1 \
-			&> /dev/null
 		end
 
-		describe "Disable all"
-			__terminate_container \
-				varnish.pool-1.1.1 \
-			&> /dev/null
+		__terminate_container \
+			varnish.pool-1.1.1 \
+		&> /dev/null
 
+		describe "Disable all"
 			docker run \
 				--detach \
 				--name varnish.pool-1.1.1 \
