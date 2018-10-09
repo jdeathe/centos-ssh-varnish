@@ -83,7 +83,7 @@ fi
 printf -- \
 	"Starting Varnish Cache: \n %s\n" \
 	"${DAEMON_OPTS}"
-	sleep 0.1
+sleep 0.1
 
 # Release lock file
 rm -f /var/lock/subsys/varnishd-wrapper
