@@ -7,16 +7,16 @@ Docker Image including:
 
 ## Overview & links
 
-- `centos-7`, `centos-7-2.1.0`, `2.1.0` [(centos-7/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-7/Dockerfile)
-- `centos-6`, `centos-6-1.5.0`, `1.5.0` [(centos-6/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/Dockerfile)
+- `centos-7`, `centos-7-2.2.0`, `2.2.0` [(centos-7/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-7/Dockerfile)
+- `centos-6`, `centos-6-1.5.1`, `1.5.1` [(centos-6/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/Dockerfile)
 
 #### centos-6
 
-The latest CentOS-6 based release can be pulled from the `centos-6` Docker tag. It is recommended to select a specific release tag - the convention is `centos-6-1.5.0`or `1.5.0` for the [1.5.0](https://github.com/jdeathe/centos-ssh-varnish/tree/1.5.0) release tag.
+The latest CentOS-6 based release can be pulled from the `centos-6` Docker tag. It is recommended to select a specific release tag - the convention is `centos-6-1.5.1`or `1.5.1` for the [1.5.1](https://github.com/jdeathe/centos-ssh-varnish/tree/1.5.1) release tag.
 
 #### centos-7
 
-The latest CentOS-7 based release can be pulled from the `centos-7` Docker tag. It is recommended to select a specific release tag - the convention is `centos-7-2.1.0`or `2.1.0` for the [2.1.0](https://github.com/jdeathe/centos-ssh-varnish/tree/2.1.0) release tag.
+The latest CentOS-7 based release can be pulled from the `centos-7` Docker tag. It is recommended to select a specific release tag - the convention is `centos-7-2.2.0`or `2.2.0` for the [2.2.0](https://github.com/jdeathe/centos-ssh-varnish/tree/2.2.0) release tag.
 
 Included in the build are the [SCL](https://www.softwarecollections.org/), [EPEL](http://fedoraproject.org/wiki/EPEL) and [IUS](https://ius.io) repositories. Installed packages include [OpenSSH](http://www.openssh.com/portable.html) secure shell, [vim-minimal](http://www.vim.org/), are installed along with python-setuptools, [supervisor](http://supervisord.org/) and [supervisor-stdout](https://github.com/coderanger/supervisor-stdout).
 
@@ -43,7 +43,7 @@ $ docker run -d -t \
   --name varnish.pool-1.1.1 \
   -p 80:80 \
   --add-host httpd_1:172.17.8.101 \
-  jdeathe/centos-ssh-varnish:2.1.0
+  jdeathe/centos-ssh-varnish:2.2.0
 ```
 
 Now you can verify it is initialised and running successfully by inspecting the container's logs.
@@ -76,7 +76,7 @@ $ docker run \
   --ulimit nproc=65535 \
   --env "VARNISH_STORAGE=malloc,256M" \
   --add-host httpd_1:172.17.8.101 \
-  jdeathe/centos-ssh-varnish:2.1.0
+  jdeathe/centos-ssh-varnish:2.2.0
 ```
 
 Now you can verify it is initialised and running successfully by inspecting the container's logs:

@@ -6,10 +6,11 @@ Summary of release changes for Version 2.
 
 CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.1.
 
-### 2.2.0 - Unreleased
+### 2.2.0 - 2018-10-09
 
 - Updates Varnish to [6.1.0](https://github.com/varnishcache/varnish-cache/blob/varnish-6.1.0/doc/changes.rst)
 - Adds lockfile to ensure varnishd is started before running varnishncsa.
+- Adds failure messages to healthcheck script.
 
 ### 2.1.0 - 2018-10-01
 
