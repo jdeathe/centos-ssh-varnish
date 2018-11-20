@@ -42,6 +42,7 @@ Run up a container named `varnish.pool-1.1.1` from the docker image `jdeathe/cen
 $ docker run -d -t \
   --name varnish.pool-1.1.1 \
   -p 80:80 \
+  --sysctl "net.core.somaxconn=1024" \
   --add-host httpd_1:172.17.8.101 \
   jdeathe/centos-ssh-varnish:1.5.1
 ```
@@ -71,10 +72,15 @@ $ docker run \
   --name varnish.pool-1.1.1 \
   --publish 8000:80 \
   --publish 8500:8443 \
+  --sysctl "net.core.somaxconn=1024" \
+  --sysctl "net.ipv4.ip_local_port_range=1024 65535" \
+  --sysctl "net.ipv4.route.flush=1" \
   --ulimit memlock=82000 \
   --ulimit nofile=131072 \
   --ulimit nproc=65535 \
   --env "VARNISH_STORAGE=malloc,256M" \
+  --env "VARNISH_MAX_THREADS=2000" \
+  --env "VARNISH_MIN_THREADS=100" \
   --add-host httpd_1:172.17.8.101 \
   jdeathe/centos-ssh-varnish:1.5.1
 ```
