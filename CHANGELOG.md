@@ -6,6 +6,10 @@ Summary of release changes for Version 1.
 
 CentOS-6 6.10 x86_64 - Varnish Cache 4.1.
 
+### 1.5.2 - Unreleased
+
+- Fixes typo in test; using `--format` instead of `--filter`.
+
 ### 1.5.1 - 2018-10-09
 
 - Adds lockfile to ensure varnishd is started before varnishncsa.
