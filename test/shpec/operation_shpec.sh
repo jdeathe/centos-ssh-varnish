@@ -796,8 +796,8 @@ function test_custom_configuration ()
 			sleep ${STARTUP_TIME}
 
 			docker ps \
-				--format "name=varnish.pool-1.1.1" \
-				--format "health=healthy" \
+				--filter "name=varnish.pool-1.1.1" \
+				--filter "health=healthy" \
 			&> /dev/null \
 			&& docker top \
 				varnish.pool-1.1.1 \
@@ -833,8 +833,8 @@ function test_custom_configuration ()
 			fi
 
 			docker ps \
-				--format "name=varnish.pool-1.1.1" \
-				--format "health=healthy" \
+				--filter "name=varnish.pool-1.1.1" \
+				--filter "health=healthy" \
 			&> /dev/null \
 			&& docker top \
 				varnish.pool-1.1.1 \
