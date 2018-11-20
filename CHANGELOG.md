@@ -9,6 +9,7 @@ CentOS-6 6.10 x86_64 - Varnish Cache 4.1.
 ### 1.5.2 - Unreleased
 
 - Fixes typo in test; using `--format` instead of `--filter`.
+- Updates source image to [1.9.1](https://github.com/jdeathe/centos-ssh/releases/tag/1.9.1).
 
 ### 1.5.1 - 2018-10-09
 
