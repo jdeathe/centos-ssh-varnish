@@ -4,9 +4,12 @@ define DOCKER_CONTAINER_PARAMETERS
 --tty \
 --name $(DOCKER_NAME) \
 --restart $(DOCKER_RESTART_POLICY) \
---ulimit memlock=$(ULIMIT_MEMLOCK) \
---ulimit nofile=$(ULIMIT_NOFILE) \
---ulimit nproc=$(ULIMIT_NPROC) \
+--sysctl "net.core.somaxconn=$(SYSCTL_NET_CORE_SOMAXCONN)" \
+--sysctl "net.ipv4.ip_local_port_range=$(SYSCTL_NET_IPV4_IP_LOCAL_PORT_RANGE)" \
+--sysctl "net.ipv4.route.flush=$(SYSCTL_NET_IPV4_ROUTE_FLUSH)" \
+--ulimit "memlock=$(ULIMIT_MEMLOCK)" \
+--ulimit "nofile=$(ULIMIT_NOFILE)" \
+--ulimit "nproc=$(ULIMIT_NPROC)" \
 --env "VARNISH_AUTOSTART_VARNISHD_WRAPPER=$(VARNISH_AUTOSTART_VARNISHD_WRAPPER)" \
 --env "VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=$(VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER)" \
 --env "VARNISH_MAX_THREADS=$(VARNISH_MAX_THREADS)" \
