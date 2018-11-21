@@ -11,7 +11,7 @@ readonly TIMER_START="$(
 	date +%s.%N
 )"
 readonly USER="varnish"
-readonly VARNISH_SECRET_PATH="/etc/varnish/secret"
+readonly SECRET_PATH="/etc/varnish/secret"
 readonly VARNISHNCSA_GROUP="varnish"
 readonly VARNISHNCSA_LOG_FILE="/var/log/varnish/access_log"
 readonly VARNISHNCSA_USER="varnishlog"
@@ -23,6 +23,33 @@ VARNISHNCSA_FORMAT=""
 # Create lock file
 touch \
 	"${LOCK_FILE}"
+
+function populate_psk_secret_file ()
+{
+	local file_path="${1:-/etc/varnish/secret}"
+	local user="${2:-varnish}"
+	local group="${3:-varnish}"
+
+	if [[ ! -s ${file_path} ]]
+	then
+		printf -- \
+			"Populating Varnish PSK secret file.\n"
+
+		dd \
+			if=/dev/urandom \
+			of="${file_path}" \
+			count=1 \
+		&> /dev/null
+
+		chown \
+			${user}:${group} \
+			"${file_path}"
+
+		chmod \
+			640 \
+			"${file_path}"
+	fi
+}
 
 function set_log_write_user ()
 {
@@ -92,25 +119,10 @@ function set_wrapper_execute_group ()
 }
 
 # Ensure the secret PSK file is present.
-if [[ ! -s ${VARNISH_SECRET_PATH} ]]
-then
-	printf -- \
-		"Populating Varnish PSK secret file.\n"
-
-	dd \
-		if=/dev/urandom \
-		of="${VARNISH_SECRET_PATH}" \
-		count=1 \
-	&> /dev/null
-
-	chown \
-		${USER}:${GROUP} \
-		"${VARNISH_SECRET_PATH}"
-
-	chmod \
-		640 \
-		"${VARNISH_SECRET_PATH}"
-fi
+populate_psk_secret_file \
+	"${SECRET_PATH}" \
+	"${USER}" \
+	"${GROUP}"
 
 set_wrapper_execute_group \
 	"${VARNISHNCSA_WRAPPER}" \
@@ -135,7 +147,7 @@ OPTIONS="-j unix,user=${USER},ccgroup=${GROUP}
  -p thread_pool_min=${VARNISH_MIN_THREADS:-50}
  -p thread_pool_max=${VARNISH_MAX_THREADS:-1000}
  -p thread_pool_timeout=${VARNISH_THREAD_TIMEOUT:-120}
- -S ${VARNISH_SECRET_PATH}
+ -S ${SECRET_PATH}
  -s ${VARNISH_STORAGE:-file,/var/lib/varnish/varnish_storage.bin,1G}
 "
 
