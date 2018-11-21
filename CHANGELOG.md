@@ -12,6 +12,9 @@ CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.1.
 - Updates source image to [2.4.1](https://github.com/jdeathe/centos-ssh/releases/tag/2.4.1).
 - Updates Varnish to [6.1.1](https://github.com/varnishcache/varnish-cache/blob/varnish-6.1.1/doc/changes.rst)
 - Adds required `--sysctl` settings to docker run templates.
+- Adds change to ensure varnishncsa is run with a non-root user `varnishlog`.
+- Adds varnishncsa access logs to docker log output.
+- Adds "Varnish Details" to docker log output.
 
 ### 2.2.0 - 2018-10-09
 

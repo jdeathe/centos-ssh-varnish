@@ -1,7 +1,76 @@
 #!/usr/bin/env bash
 
+set -e
+
+readonly BIN="/usr/sbin/varnishd"
+readonly GROUP="varnish"
+readonly LOCK_FILE="/var/lock/subsys/varnishd-wrapper"
+readonly NICE="/bin/nice"
+readonly NICENESS="10"
+readonly TIMER_START="$(
+	date +%s.%N
+)"
+readonly USER="varnish"
+readonly SECRET_PATH="/etc/varnish/secret"
+readonly VARNISHNCSA_GROUP="varnish"
+readonly VARNISHNCSA_LOG_FILE="/var/log/varnish/access_log"
+readonly VARNISHNCSA_USER="varnishlog"
+readonly VARNISHNCSA_WRAPPER="/usr/sbin/varnishncsa-wrapper"
+
+OPTIONS=""
+VARNISHNCSA_FORMAT=""
+
 # Create lock file
-touch /var/lock/subsys/varnishd-wrapper
+touch \
+	"${LOCK_FILE}"
+
+function populate_psk_secret_file ()
+{
+	local file_path="${1:-/etc/varnish/secret}"
+	local user="${2:-varnish}"
+	local group="${3:-varnish}"
+
+	if [[ ! -s ${file_path} ]]
+	then
+		printf -- \
+			"Populating Varnish PSK secret file.\n"
+
+		dd \
+			if=/dev/urandom \
+			of="${file_path}" \
+			count=1 \
+		&> /dev/null
+
+		chown \
+			${user}:${group} \
+			"${file_path}"
+
+		chmod \
+			640 \
+			"${file_path}"
+	fi
+}
+
+function set_log_write_user ()
+{
+	local file_path="${1:-}"
+	local user="${2:-}"
+	local group="${3:-}"
+
+	if [[ ! -f ${file_path} ]]
+	then
+		touch \
+			"${file_path}"
+	fi
+
+	chown \
+		"${user}":"${group}" \
+		"${file_path}"
+
+	chmod \
+		0660 \
+		"${file_path}"
+}
 
 function set_varnish_vcl_conf ()
 {
@@ -35,12 +104,39 @@ function set_varnish_vcl_conf ()
 	fi
 }
 
-set_varnish_vcl_conf "${VARNISH_VCL_CONF}"
+function set_wrapper_execute_group ()
+{
+	local file_path="${1:-}"
+	local group="${2:-}"
 
-readonly VARNISH_GROUP="varnish"
-readonly VARNISH_SECRET_PATH="/etc/varnish/secret"
-readonly VARNISH_USER="varnish"
-readonly DAEMON_OPTS="-j unix,user=${VARNISH_USER},ccgroup=${VARNISH_GROUP}
+	chgrp \
+		"${group}" \
+		"${file_path}"
+
+	chmod \
+		0750 \
+		"${file_path}"
+}
+
+# Ensure the secret PSK file is present.
+populate_psk_secret_file \
+	"${SECRET_PATH}" \
+	"${USER}" \
+	"${GROUP}"
+
+set_wrapper_execute_group \
+	"${VARNISHNCSA_WRAPPER}" \
+	"${VARNISHNCSA_GROUP}"
+
+set_log_write_user \
+	"${VARNISHNCSA_LOG_FILE}" \
+	"${VARNISHNCSA_USER}" \
+	"${VARNISHNCSA_GROUP}"
+
+set_varnish_vcl_conf \
+	"${VARNISH_VCL_CONF}"
+
+OPTIONS="-j unix,user=${USER},ccgroup=${GROUP}
  -F
  -P /var/run/varnish.pid
  -a 0.0.0.0:80
@@ -51,44 +147,45 @@ readonly DAEMON_OPTS="-j unix,user=${VARNISH_USER},ccgroup=${VARNISH_GROUP}
  -p thread_pool_min=${VARNISH_MIN_THREADS:-50}
  -p thread_pool_max=${VARNISH_MAX_THREADS:-1000}
  -p thread_pool_timeout=${VARNISH_THREAD_TIMEOUT:-120}
- -S ${VARNISH_SECRET_PATH}
+ -S ${SECRET_PATH}
  -s ${VARNISH_STORAGE:-file,/var/lib/varnish/varnish_storage.bin,1G}
 "
-readonly NICE="/bin/nice"
-readonly NICENESS="${VARNISH_NICENESS:-10}"
-readonly VARNISHD="/usr/sbin/varnishd"
 
-# Ensure the secret PSK file is present.
-if [[ ! -s ${VARNISH_SECRET_PATH} ]]
+if [[ ${VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER} == true ]]
 then
-	printf -- \
-		"Populating Varnish PSK secret file.\n" \
-	sleep 0.1
-
-	dd \
-		if=/dev/urandom \
-		of="${VARNISH_SECRET_PATH}" \
-		count=1 \
-	&> /dev/null
-
-	chown \
-		${VARNISH_USER}:${VARNISH_GROUP} \
-		"${VARNISH_SECRET_PATH}"
-
-	chmod \
-		640 \
-		"${VARNISH_SECRET_PATH}"
+	VARNISHNCSA_FORMAT="${VARNISH_VARNISHNCSA_FORMAT:-"%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\""}"
 fi
 
-printf -- \
-	"Starting Varnish Cache: \n %s\n" \
-	"${DAEMON_OPTS}"
-sleep 0.1
+TIMER_TOTAL="$(
+	echo - | awk "\
+	{ T1=\"${TIMER_START}\" } \
+	{ T2=\"$(date +%s.%N)\" } \
+	{ print T2 - T1; }"
+)"
+
+cat \
+	<<-EOT
+
+	================================================================================
+	Varnish Details
+	--------------------------------------------------------------------------------
+	vcl : ${VARNISH_VCL_CONF:-/etc/varnish/docker-default.vcl}
+	storage : ${VARNISH_STORAGE:-file,/var/lib/varnish/varnish_storage.bin,1G}
+	ttl : ${VARNISH_TTL:-120}
+	thread_pool_min : ${VARNISH_MIN_THREADS:-50}
+	thread_pool_max : ${VARNISH_MAX_THREADS:-1000}
+	thread_pool_timeout: ${VARNISH_THREAD_TIMEOUT:-120}
+	varnishncsa format : ${VARNISHNCSA_FORMAT:-N/A}
+	--------------------------------------------------------------------------------
+	${TIMER_TOTAL}
+
+EOT
 
 # Release lock file
-rm -f /var/lock/subsys/varnishd-wrapper
+rm -f \
+	"${LOCK_FILE}"
 
 exec ${NICE} \
 	-n ${NICENESS} \
-	${VARNISHD} \
-	${DAEMON_OPTS}
+	${BIN} \
+	${OPTIONS}
