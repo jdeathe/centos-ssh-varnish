@@ -25,7 +25,7 @@ RUN { \
 		--setopt=tsflags=nodocs \
 		--disableplugin=fastestmirror \
 		gcc-4.8.5-28.el7_5.1 \
-		varnish-6.1.0-1.el7 \
+		varnish-6.1.1-1.el7 \
 	&& yum versionlock add \
 		varnish \
 		gcc \
