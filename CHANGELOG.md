@@ -6,6 +6,16 @@ Summary of release changes for Version 1.
 
 CentOS-6 6.10 x86_64 - Varnish Cache 4.1.
 
+### 1.5.2 - 2018-12-10
+
+- Fixes typo in test; using `--format` instead of `--filter`.
+- Updates source image to [1.9.1](https://github.com/jdeathe/centos-ssh/releases/tag/1.9.1).
+- Updates image versions in docker-compose example and tests.
+- Adds required `--sysctl` settings to docker run templates.
+- Adds change to ensure varnishncsa is run with a non-root user `varnishlog`.
+- Adds varnishncsa access logs to docker log output.
+- Adds "Varnish Details" to docker log output.
+
 ### 1.5.1 - 2018-10-09
 
 - Adds lockfile to ensure varnishd is started before varnishncsa.

@@ -4,7 +4,7 @@
 # CentOS-6, Varnish 4.1
 #
 # =============================================================================
-FROM jdeathe/centos-ssh:1.9.0
+FROM jdeathe/centos-ssh:1.9.1
 
 # -----------------------------------------------------------------------------
 # Install Varnish Cache
@@ -50,17 +50,26 @@ RUN ln -sf \
 	&& chmod 644 \
 		/etc/varnish/*.vcl \
 	&& chmod 700 \
-		/usr/{bin/healthcheck,sbin/{varnishd,varnishncsa}-wrapper}
+		/usr/{bin/healthcheck,sbin/{varnishd,varnishncsa}-wrapper} \
+	&& chmod 750 \
+		/usr/sbin/varnishncsa-wrapper \
+	&& chgrp varnish \
+		/usr/sbin/varnishncsa-wrapper \
+	&& mkdir -p \
+		/var/run/varnish \
+	&& chown \
+		varnishlog:varnish \
+		/var/run/varnish
 
 EXPOSE 80 8443
 
 # -----------------------------------------------------------------------------
 # Set default environment variables
 # -----------------------------------------------------------------------------
-ENV SSH_AUTOSTART_SSHD=false \
-	SSH_AUTOSTART_SSHD_BOOTSTRAP=false \
-	VARNISH_AUTOSTART_VARNISHD_WRAPPER=true \
-	VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=false \
+ENV SSH_AUTOSTART_SSHD="false" \
+	SSH_AUTOSTART_SSHD_BOOTSTRAP="false" \
+	VARNISH_AUTOSTART_VARNISHD_WRAPPER="true" \
+	VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER="false" \
 	VARNISH_MAX_THREADS="1000" \
 	VARNISH_MIN_THREADS="50" \
 	VARNISH_STORAGE="file,/var/lib/varnish/varnish_storage.bin,1G" \
@@ -72,7 +81,7 @@ ENV SSH_AUTOSTART_SSHD=false \
 # -----------------------------------------------------------------------------
 # Set image metadata
 # -----------------------------------------------------------------------------
-ARG RELEASE_VERSION="1.5.1"
+ARG RELEASE_VERSION="1.5.2"
 LABEL \
 	maintainer="James Deathe <james.deathe@gmail.com>" \
 	install="docker run \

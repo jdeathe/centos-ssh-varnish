@@ -86,7 +86,7 @@ function __setup ()
 	local -r backend_alias="httpd_1"
 	local -r backend_name="apache-php.pool-1.1.1"
 	local -r backend_network="bridge_t1"
-	local -r backend_release="2.3.0"
+	local -r backend_release="2.3.1"
 
 	# Create the bridge network
 	if [[ -z $(docker network ls -q -f name="${backend_network}") ]]; then
@@ -281,14 +281,14 @@ function test_basic_operations ()
 			it "Sets a 1G file storage."
 				assert __shpec_matcher_egrep \
 					"${varnish_logs}" \
-					"[ ]+-s file,\/var\/lib\/varnish\/varnish_storage\.bin,1G"
+					"^storage : file,\/var\/lib\/varnish\/varnish_storage\.bin,1G"
 			end
 
 			describe "VCL file"
 				it "Sets path to docker-default.vcl."
 					assert __shpec_matcher_egrep \
 						"${varnish_logs}" \
-						"[ ]+-f \/etc\/varnish\/docker-default\.vcl"
+						"^vcl : \/etc\/varnish\/docker-default\.vcl"
 				end
 
 				it "Is unaltered."
@@ -732,14 +732,14 @@ function test_custom_configuration ()
 			it "Sets a 256M malloc storage."
 				assert __shpec_matcher_egrep \
 					"${varnish_logs}" \
-					"[ ]+-s malloc,256M"
+					"^storage : malloc,256M"
 			end
 
 			describe "VCL file"
 				it "Sets path to docker-default.vcl."
 					assert __shpec_matcher_egrep \
 						"${varnish_logs}" \
-						"[ ]+-f \/etc\/varnish\/docker-default\.vcl"
+						"^vcl : \/etc\/varnish\/docker-default\.vcl"
 				end
 
 				it "Is unaltered."
@@ -796,8 +796,8 @@ function test_custom_configuration ()
 			sleep ${STARTUP_TIME}
 
 			docker ps \
-				--format "name=varnish.pool-1.1.1" \
-				--format "health=healthy" \
+				--filter "name=varnish.pool-1.1.1" \
+				--filter "health=healthy" \
 			&> /dev/null \
 			&& docker top \
 				varnish.pool-1.1.1 \
@@ -833,8 +833,8 @@ function test_custom_configuration ()
 			fi
 
 			docker ps \
-				--format "name=varnish.pool-1.1.1" \
-				--format "health=healthy" \
+				--filter "name=varnish.pool-1.1.1" \
+				--filter "health=healthy" \
 			&> /dev/null \
 			&& docker top \
 				varnish.pool-1.1.1 \
@@ -891,9 +891,7 @@ function test_custom_configuration ()
 
 			# Ensure log file exists before checking it's contents
 			counter=0
-			until docker exec \
-				varnish.pool-1.1.1 \
-				bash -c "[[ -s /var/log/varnish/access_log ]]"
+			while true
 			do
 				if (( counter > 6 ))
 				then
@@ -906,6 +904,13 @@ function test_custom_configuration ()
 					-H "Host: ${backend_hostname}" \
 					http://127.0.0.1:${container_port_80}/ \
 				&> /dev/null
+
+				if docker exec \
+					varnish.pool-1.1.1 \
+					bash -c "[[ -s /var/log/varnish/access_log ]]"
+				then
+					break
+				fi
 
 				sleep 0.5
 				(( counter += 1 ))
@@ -965,9 +970,7 @@ function test_custom_configuration ()
 
 			# Ensure log file exists before checking it's contents
 			counter=0
-			until docker exec \
-				varnish.pool-1.1.1 \
-				bash -c "[[ -s /var/log/varnish/access_log ]]"
+			while true
 			do
 				if (( counter > 6 ))
 				then
@@ -980,6 +983,13 @@ function test_custom_configuration ()
 					-H "Host: ${backend_hostname}" \
 					http://127.0.0.1:${container_port_80}/ \
 				&> /dev/null
+
+				if docker exec \
+					varnish.pool-1.1.1 \
+					bash -c "[[ -s /var/log/varnish/access_log ]]"
+				then
+					break
+				fi
 
 				sleep 0.5
 				(( counter += 1 ))
