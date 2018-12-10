@@ -6,7 +6,7 @@ Summary of release changes for Version 2.
 
 CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.1.
 
-### 2.2.1 - Unreleased
+### 2.2.1 - 2018-12-10
 
 - Fixes typo in test; using `--format` instead of `--filter`.
 - Updates source image to [2.4.1](https://github.com/jdeathe/centos-ssh/releases/tag/2.4.1).
