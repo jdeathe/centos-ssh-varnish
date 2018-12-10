@@ -1,27 +1,23 @@
 #!/usr/bin/env bash
 
-readonly DAEMON_OPTS="-a
- -c
- -P /var/run/varnishncsa.pid
- -w /var/log/varnish/access_log
-"
+readonly BIN="/usr/bin/varnishncsa"
 readonly FORMAT="${VARNISH_VARNISHNCSA_FORMAT:-"%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\""}"
-readonly NICE=/bin/nice
-readonly NICENESS=${VARNISHNCSA_NICENESS:-10}
-readonly VARNISHNCSA=/usr/bin/varnishncsa
+readonly LOCK_FILE="/var/lock/subsys/varnishd-wrapper"
+readonly NICE="/bin/nice"
+readonly NICENESS="10"
+readonly OPTIONS="-a
+ -c
+ -P /var/run/varnish/varnishncsa.pid
+"
 
-while true; do
+while true
+do
 	sleep 0.1
-	[[ -e /var/lock/subsys/varnishd-wrapper ]] || break
+	[[ -e ${LOCK_FILE} ]] || break
 done
-
-printf -- \
-	"Starting Varnish Apache/NCSA logging: \n %s -F %s\n\n" \
-	"${DAEMON_OPTS}" \
-	"${FORMAT}"
 
 exec ${NICE} \
 	-n ${NICENESS} \
-	${VARNISHNCSA} \
-	${DAEMON_OPTS} \
+	${BIN} \
+	${OPTIONS} \
 	-F "${FORMAT}"

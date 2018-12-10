@@ -4,7 +4,7 @@
 # CentOS-7, Varnish 6.1
 #
 # =============================================================================
-FROM jdeathe/centos-ssh:2.4.0
+FROM jdeathe/centos-ssh:2.4.1
 
 # -----------------------------------------------------------------------------
 # Install Varnish Cache
@@ -24,8 +24,8 @@ RUN { \
 	&& yum -y install \
 		--setopt=tsflags=nodocs \
 		--disableplugin=fastestmirror \
-		gcc-4.8.5-28.el7_5.1 \
-		varnish-6.1.0-1.el7 \
+		gcc-4.8.5-36.el7 \
+		varnish-6.1.1-1.el7 \
 	&& yum versionlock add \
 		varnish \
 		gcc \
@@ -60,17 +60,26 @@ RUN ln -sf \
 	&& chmod 644 \
 		/etc/varnish/*.vcl \
 	&& chmod 700 \
-		/usr/{bin/healthcheck,sbin/{varnishd,varnishncsa}-wrapper}
+		/usr/{bin/healthcheck,sbin/{varnishd,varnishncsa}-wrapper} \
+	&& chmod 750 \
+		/usr/sbin/varnishncsa-wrapper \
+	&& chgrp varnish \
+		/usr/sbin/varnishncsa-wrapper \
+	&& mkdir -p \
+		/var/run/varnish \
+	&& chown \
+		varnishlog:varnish \
+		/var/run/varnish
 
 EXPOSE 80 8443
 
 # -----------------------------------------------------------------------------
 # Set default environment variables
 # -----------------------------------------------------------------------------
-ENV SSH_AUTOSTART_SSHD=false \
-	SSH_AUTOSTART_SSHD_BOOTSTRAP=false \
-	VARNISH_AUTOSTART_VARNISHD_WRAPPER=true \
-	VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=false \
+ENV SSH_AUTOSTART_SSHD="false" \
+	SSH_AUTOSTART_SSHD_BOOTSTRAP="false" \
+	VARNISH_AUTOSTART_VARNISHD_WRAPPER="true" \
+	VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER="false" \
 	VARNISH_MAX_THREADS="1000" \
 	VARNISH_MIN_THREADS="50" \
 	VARNISH_STORAGE="file,/var/lib/varnish/varnish_storage.bin,1G" \
@@ -82,7 +91,7 @@ ENV SSH_AUTOSTART_SSHD=false \
 # -----------------------------------------------------------------------------
 # Set image metadata
 # -----------------------------------------------------------------------------
-ARG RELEASE_VERSION="2.2.0"
+ARG RELEASE_VERSION="2.2.1"
 LABEL \
 	maintainer="James Deathe <james.deathe@gmail.com>" \
 	install="docker run \

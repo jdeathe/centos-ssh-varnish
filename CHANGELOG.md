@@ -6,6 +6,18 @@ Summary of release changes for Version 2.
 
 CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.1.
 
+### 2.2.1 - 2018-12-10
+
+- Fixes typo in test; using `--format` instead of `--filter`.
+- Updates source image to [2.4.1](https://github.com/jdeathe/centos-ssh/releases/tag/2.4.1).
+- Updates Varnish to [6.1.1](https://github.com/varnishcache/varnish-cache/blob/varnish-6.1.1/doc/changes.rst).
+- Updates `gcc` packages to 4.8.5-36.
+- Updates image versions in docker-compose example and tests.
+- Adds required `--sysctl` settings to docker run templates.
+- Adds change to ensure varnishncsa is run with a non-root user `varnishlog`.
+- Adds varnishncsa access logs to docker log output.
+- Adds "Varnish Details" to docker log output.
+
 ### 2.2.0 - 2018-10-09
 
 - Updates Varnish to [6.1.0](https://github.com/varnishcache/varnish-cache/blob/varnish-6.1.0/doc/changes.rst)
