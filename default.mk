@@ -1,4 +1,76 @@
 
+# Handle incrementing the docker host port for instances unless a port range is defined.
+DOCKER_PUBLISH := $(shell \
+	if [[ "$(DOCKER_PORT_MAP_TCP_80)" != NULL ]]; \
+	then \
+		if grep -qE \
+				'^([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}:)?[1-9][0-9]*$$' \
+				<<< "$(DOCKER_PORT_MAP_TCP_80)" \
+			&& grep -qE \
+				'^.+\.[0-9]+(\.[0-9]+)?$$' \
+				<<< "$(DOCKER_NAME)"; \
+		then \
+			printf -- ' --publish %s%s:80/tcp' \
+				"$$(\
+					grep -o '^[0-9\.]*:' \
+						<<< "$(DOCKER_PORT_MAP_TCP_80)" \
+				)" \
+				"$$(( \
+					$$(\
+						grep -oE \
+							'[0-9]+$$' \
+							<<< "$(DOCKER_PORT_MAP_TCP_80)" \
+					) \
+					+ $$(\
+						grep -oE \
+							'([0-9]+)(\.[0-9]+)?$$' \
+							<<< "$(DOCKER_NAME)" \
+						| awk -F. \
+							'{ print $$1; }' \
+					) \
+					- 1 \
+				))"; \
+		else \
+			printf -- ' --publish %s:80/tcp' \
+				"$(DOCKER_PORT_MAP_TCP_80)"; \
+		fi; \
+	fi; \
+	if [[ "$(DOCKER_PORT_MAP_TCP_8443)" != NULL ]]; \
+	then \
+		if grep -qE \
+				'^([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}:)?[1-9][0-9]*$$' \
+				<<< "$(DOCKER_PORT_MAP_TCP_8443)" \
+			&& grep -qE \
+				'^.+\.[0-9]+(\.[0-9]+)?$$' \
+				<<< "$(DOCKER_NAME)"; \
+		then \
+			printf -- ' --publish %s%s:8443/tcp' \
+				"$$(\
+					grep -o '^[0-9\.]*:' \
+						<<< "$(DOCKER_PORT_MAP_TCP_8443)" \
+				)" \
+				"$$(( \
+					$$(\
+						grep -oE \
+							'[0-9]+$$' \
+							<<< "$(DOCKER_PORT_MAP_TCP_8443)" \
+					) \
+					+ $$(\
+						grep -oE \
+							'([0-9]+)(\.[0-9]+)?$$' \
+							<<< "$(DOCKER_NAME)" \
+						| awk -F. \
+							'{ print $$1; }' \
+					) \
+					- 1 \
+				))"; \
+		else \
+			printf -- ' --publish %s:8443/tcp' \
+				"$(DOCKER_PORT_MAP_TCP_8443)"; \
+		fi; \
+	fi; \
+)
+
 # Common parameters of create and run targets
 define DOCKER_CONTAINER_PARAMETERS
 --tty \
@@ -20,8 +92,3 @@ define DOCKER_CONTAINER_PARAMETERS
 --env "VARNISH_VARNISHNCSA_FORMAT=$(VARNISH_VARNISHNCSA_FORMAT)" \
 --env "VARNISH_VCL_CONF=$(VARNISH_VCL_CONF)"
 endef
-
-DOCKER_PUBLISH := $(shell \
-	if [[ $(DOCKER_PORT_MAP_TCP_80) != NULL ]]; then printf -- '--publish %s:80\n' $(DOCKER_PORT_MAP_TCP_80); fi; \
-	if [[ $(DOCKER_PORT_MAP_TCP_8443) != NULL ]]; then printf -- '--publish %s:8443\n' $(DOCKER_PORT_MAP_TCP_8443); fi; \
-)

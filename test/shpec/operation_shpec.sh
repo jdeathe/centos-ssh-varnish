@@ -3,7 +3,6 @@ readonly TEST_DIRECTORY="test"
 
 # These should ideally be a static value but hosts might be using this port so 
 # need to allow for alternatives.
-DOCKER_PORT_MAP_TCP_22="${DOCKER_PORT_MAP_TCP_22:-NULL}"
 DOCKER_PORT_MAP_TCP_80="${DOCKER_PORT_MAP_TCP_80:-8000}"
 DOCKER_PORT_MAP_TCP_8443="${DOCKER_PORT_MAP_TCP_8443:-8443}"
 
@@ -154,7 +153,7 @@ function __terminate_container ()
 
 function test_basic_operations ()
 {
-	local -r varnish_vcl_source_path="src/etc/services-config/varnish/docker-default.vcl"
+	local -r varnish_vcl_source_path="src/etc/varnish/docker-default.vcl"
 	local -r backend_hostname="localhost.localdomain"
 	local -r backend_name="apache-php.pool-1.1.1"
 	local -r backend_network="bridge_t1"
@@ -168,7 +167,7 @@ function test_basic_operations ()
 	local varnish_vcl_loaded_hash=""
 	local varnish_vcl_source_hash=""
 
-	trap "__terminate_container varnish.pool-1.1.1 &> /dev/null; \
+	trap "__terminate_container varnish.1 &> /dev/null; \
 		__destroy; \
 		exit 1" \
 		INT TERM EXIT
@@ -176,13 +175,13 @@ function test_basic_operations ()
 	describe "Basic Varnish operations"
 		describe "Runs named container"
 			__terminate_container \
-				varnish.pool-1.1.1 \
+				varnish.1 \
 			&> /dev/null
 
 			it "Can publish ${DOCKER_PORT_MAP_TCP_80}:80."
 				docker run \
 					--detach \
-					--name varnish.pool-1.1.1 \
+					--name varnish.1 \
 					--network ${backend_network} \
 					--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
 					--publish ${DOCKER_PORT_MAP_TCP_8443}:8443 \
@@ -191,7 +190,7 @@ function test_basic_operations ()
 
 				container_port_80="$(
 					__get_container_port \
-						varnish.pool-1.1.1 \
+						varnish.1 \
 						80/tcp
 				)"
 
@@ -210,7 +209,7 @@ function test_basic_operations ()
 			it "Can publish ${DOCKER_PORT_MAP_TCP_8443}:8443."
 				container_port_8443="$(
 					__get_container_port \
-						varnish.pool-1.1.1 \
+						varnish.1 \
 						8443/tcp
 				)"
 
@@ -228,7 +227,7 @@ function test_basic_operations ()
 		end
 
 		if ! __is_container_ready \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 			${STARTUP_TIME} \
 			"/usr/sbin/varnishd " \
 			"varnishadm vcl.show -v boot"
@@ -238,14 +237,14 @@ function test_basic_operations ()
 
 		describe "Default initialisation"
 			varnish_logs="$(
-				docker exec -t \
-					varnish.pool-1.1.1 \
-					cat /var/log/varnish.log
+				docker logs \
+					varnish.1 \
+				2>&1
 			)"
 
 			varnish_parameters="$(
 				docker exec -t \
-					varnish.pool-1.1.1 \
+					varnish.1 \
 					varnishadm param.show
 			)"
 
@@ -294,7 +293,7 @@ function test_basic_operations ()
 				it "Is unaltered."
 					varnish_vcl_loaded_hash="$(
 						docker exec \
-							varnish.pool-1.1.1 \
+							varnish.1 \
 							varnishadm vcl.show -v boot \
 						| sed -n '/\/\/ VCL\.SHOW/,/\/\/ VCL\.SHOW/p' \
 						| sed \
@@ -610,7 +609,7 @@ function test_basic_operations ()
 		end
 
 		__terminate_container \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 		&> /dev/null
 	end
 
@@ -629,7 +628,7 @@ function test_custom_configuration ()
 	local varnish_vcl_loaded_hash=""
 	local varnish_vcl_source_hash=""
 
-	trap "__terminate_container varnish.pool-1.1.1 &> /dev/null; \
+	trap "__terminate_container varnish.1 &> /dev/null; \
 		__destroy; \
 		exit 1" \
 		INT TERM EXIT
@@ -637,13 +636,13 @@ function test_custom_configuration ()
 	describe "Customised Varnish configuration"
 		describe "Runs named container"
 			__terminate_container \
-				varnish.pool-1.1.1 \
+				varnish.1 \
 			&> /dev/null
 
 			it "Can publish ${DOCKER_PORT_MAP_TCP_80}:80."
 				docker run \
 					--detach \
-					--name varnish.pool-1.1.1 \
+					--name varnish.1 \
 					--env "VARNISH_MAX_THREADS=5000" \
 					--env "VARNISH_MIN_THREADS=100" \
 					--env "VARNISH_THREAD_TIMEOUT=300" \
@@ -661,7 +660,7 @@ function test_custom_configuration ()
 
 				container_port_80="$(
 					__get_container_port \
-						varnish.pool-1.1.1 \
+						varnish.1 \
 						80/tcp
 				)"
 
@@ -679,7 +678,7 @@ function test_custom_configuration ()
 		end
 
 		if ! __is_container_ready \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 			${STARTUP_TIME} \
 			"/usr/sbin/varnishd " \
 			"varnishadm vcl.show -v boot"
@@ -689,14 +688,14 @@ function test_custom_configuration ()
 
 		describe "Custom initialisation"
 			varnish_logs="$(
-				docker exec -t \
-					varnish.pool-1.1.1 \
-					cat /var/log/varnish.log
+				docker logs \
+					varnish.1 \
+				2>&1
 			)"
 
 			varnish_parameters="$(
 				docker exec -t \
-					varnish.pool-1.1.1 \
+					varnish.1 \
 					varnishadm param.show
 			)"
 
@@ -745,7 +744,7 @@ function test_custom_configuration ()
 				it "Is unaltered."
 					varnish_vcl_loaded_hash="$(
 						docker exec \
-							varnish.pool-1.1.1 \
+							varnish.1 \
 							varnishadm vcl.show -v boot \
 						| sed -n '/\/\/ VCL\.SHOW/,/\/\/ VCL\.SHOW/p' \
 						| sed \
@@ -773,19 +772,19 @@ function test_custom_configuration ()
 		end
 
 		__terminate_container \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 		&> /dev/null
 	end
 
 	describe "Configure autostart"
 		__terminate_container \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 		&> /dev/null
 
 		it "Can disable varnishd-wrapper."
 			docker run \
 				--detach \
-				--name varnish.pool-1.1.1 \
+				--name varnish.1 \
 				--env VARNISH_AUTOSTART_VARNISHD_WRAPPER=false \
 				--network ${backend_network} \
 				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
@@ -796,11 +795,11 @@ function test_custom_configuration ()
 			sleep ${STARTUP_TIME}
 
 			docker ps \
-				--filter "name=varnish.pool-1.1.1" \
+				--filter "name=varnish.1" \
 				--filter "health=healthy" \
 			&> /dev/null \
 			&& docker top \
-				varnish.pool-1.1.1 \
+				varnish.1 \
 			| grep -qE '/usr/sbin/varnishd '
 
 			assert equal \
@@ -809,13 +808,13 @@ function test_custom_configuration ()
 		end
 
 		__terminate_container \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 		&> /dev/null
 
 		it "Can enable varnishncsa-wrapper."
 			docker run \
 				--detach \
-				--name varnish.pool-1.1.1 \
+				--name varnish.1 \
 				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
 				--network ${backend_network} \
 				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
@@ -824,7 +823,7 @@ function test_custom_configuration ()
 			&> /dev/null
 
 			if ! __is_container_ready \
-				varnish.pool-1.1.1 \
+				varnish.1 \
 				${STARTUP_TIME} \
 				"/usr/sbin/varnishd " \
 				"varnishadm vcl.show -v boot"
@@ -833,11 +832,11 @@ function test_custom_configuration ()
 			fi
 
 			docker ps \
-				--filter "name=varnish.pool-1.1.1" \
+				--filter "name=varnish.1" \
 				--filter "health=healthy" \
 			&> /dev/null \
 			&& docker top \
-				varnish.pool-1.1.1 \
+				varnish.1 \
 			| grep -qE '/usr/bin/varnishncsa '
 
 			assert equal \
@@ -846,19 +845,19 @@ function test_custom_configuration ()
 		end
 
 		__terminate_container \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 		&> /dev/null
 	end
 
 	describe "Configure Apache/NCSA access log"
 		__terminate_container \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 		&> /dev/null
 
 		it "Outputs in combined format"
 			docker run \
 				--detach \
-				--name varnish.pool-1.1.1 \
+				--name varnish.1 \
 				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
 				--network ${backend_network} \
 				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
@@ -867,7 +866,7 @@ function test_custom_configuration ()
 			&> /dev/null
 
 			if ! __is_container_ready \
-				varnish.pool-1.1.1 \
+				varnish.1 \
 				${STARTUP_TIME} \
 				"/usr/sbin/varnishd " \
 				"varnishadm vcl.show -v boot"
@@ -876,7 +875,7 @@ function test_custom_configuration ()
 			fi
 
 			if ! __is_container_ready \
-				varnish.pool-1.1.1 \
+				varnish.1 \
 				${STARTUP_TIME} \
 				"/usr/bin/varnishncsa "
 			then
@@ -885,43 +884,22 @@ function test_custom_configuration ()
 
 			container_port_80="$(
 				__get_container_port \
-					varnish.pool-1.1.1 \
+					varnish.1 \
 					80/tcp
 			)"
 
-			# Ensure log file exists before checking it's contents
-			counter=0
-			while true
-			do
-				if (( counter > 6 ))
-				then
-					break
-				fi
+			# Make a request to populate the access_log
+			curl -sI \
+				-X GET \
+				-H "Host: ${backend_hostname}" \
+				http://127.0.0.1:${container_port_80}/ \
+			&> /dev/null
 
-				# Make a request to populate the access_log
-				curl -sI \
-					-X GET \
-					-H "Host: ${backend_hostname}" \
-					http://127.0.0.1:${container_port_80}/ \
-				&> /dev/null
-
-				if docker exec \
-					varnish.pool-1.1.1 \
-					bash -c "[[ -s /var/log/varnish/access_log ]]"
-				then
-					break
-				fi
-
-				sleep 0.5
-				(( counter += 1 ))
-			done
-
-			docker exec \
-				varnish.pool-1.1.1 \
-				tail -n 1 \
-				/var/log/varnish/access_log \
+			docker logs \
+				--tail 1 \
+				varnish.1 \
 			| grep -qE \
-				"^.+ .+ .+ \[.+\] \"GET (http:\/\/${backend_hostname})?/ HTTP/1\.1\" 200 .+ \".+\" \".*\"$" \
+				"^.+ .+ .+ \[.+\] \"GET (http:\/\/${backend_hostname})?/ HTTP/1\.1\" 200 .+ \".+\" \".*\"\$" \
 			&> /dev/null
 
 			assert equal \
@@ -930,13 +908,13 @@ function test_custom_configuration ()
 		end
 
 		__terminate_container \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 		&> /dev/null
 
 		it "Outputs in custom format"
 			docker run \
 				--detach \
-				--name varnish.pool-1.1.1 \
+				--name varnish.1 \
 				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
 				--env VARNISH_VARNISHNCSA_FORMAT="%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\" %{Varnish:hitmiss}x" \
 				--network ${backend_network} \
@@ -946,7 +924,7 @@ function test_custom_configuration ()
 			&> /dev/null
 
 			if ! __is_container_ready \
-				varnish.pool-1.1.1 \
+				varnish.1 \
 				${STARTUP_TIME} \
 				"/usr/sbin/varnishd " \
 				"varnishadm vcl.show -v boot"
@@ -955,7 +933,7 @@ function test_custom_configuration ()
 			fi
 
 			if ! __is_container_ready \
-				varnish.pool-1.1.1 \
+				varnish.1 \
 				${STARTUP_TIME} \
 				"/usr/bin/varnishncsa "
 			then
@@ -964,43 +942,22 @@ function test_custom_configuration ()
 
 			container_port_80="$(
 				__get_container_port \
-					varnish.pool-1.1.1 \
+					varnish.1 \
 					80/tcp
 			)"
 
-			# Ensure log file exists before checking it's contents
-			counter=0
-			while true
-			do
-				if (( counter > 6 ))
-				then
-					break
-				fi
+			# Make a request to populate the access_log
+			curl -sI \
+				-X GET \
+				-H "Host: ${backend_hostname}" \
+				http://127.0.0.1:${container_port_80}/ \
+			&> /dev/null
 
-				# Make a request to populate the access_log
-				curl -sI \
-					-X GET \
-					-H "Host: ${backend_hostname}" \
-					http://127.0.0.1:${container_port_80}/ \
-				&> /dev/null
-
-				if docker exec \
-					varnish.pool-1.1.1 \
-					bash -c "[[ -s /var/log/varnish/access_log ]]"
-				then
-					break
-				fi
-
-				sleep 0.5
-				(( counter += 1 ))
-			done
-
-			docker exec \
-				varnish.pool-1.1.1 \
-				tail -n 1 \
-				/var/log/varnish/access_log \
+			docker logs \
+				--tail 1 \
+				varnish.1 \
 			| grep -qE \
-				"^.+ .+ .+ \[.+\] \"GET (http:\/\/${backend_hostname})?/ HTTP/1\.1\" 200 .+ \".+\" \".*\" (hit|miss)+$" \
+				"^.+ .+ .+ \[.+\] \"GET (http:\/\/${backend_hostname})?/ HTTP/1\.1\" 200 .+ \".+\" \".*\" (hit|miss)+\$" \
 			&> /dev/null
 
 			assert equal \
@@ -1009,7 +966,7 @@ function test_custom_configuration ()
 		end
 
 		__terminate_container \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 		&> /dev/null
 	end
 
@@ -1020,33 +977,46 @@ function test_custom_configuration ()
 function test_healthcheck ()
 {
 	local -r backend_network="bridge_t1"
-	local -r interval_seconds=0.5
-	local -r retries=4
-	local health_status=""
-
-	trap "__terminate_container varnish.pool-1.1.1 &> /dev/null; \
-		__destroy; \
-		exit 1" \
-		INT TERM EXIT
+	local -r event_lag_seconds=2
+	local -r interval_seconds=1
+	local -r retries=2
+	local container_id
+	local events_since_timestamp
+	local health_status
 
 	describe "Healthcheck"
-		__terminate_container \
-			varnish.pool-1.1.1 \
-		&> /dev/null
+		trap "__terminate_container varnish.1 &> /dev/null; \
+			__destroy; \
+			exit 1" \
+			INT TERM EXIT
 
 		describe "Default configuration"
+			__terminate_container \
+				varnish.1 \
+			&> /dev/null
+
 			docker run \
 				--detach \
-				--name varnish.pool-1.1.1 \
+				--name varnish.1 \
 				--network ${backend_network} \
 				jdeathe/centos-ssh-varnish:latest \
 			&> /dev/null
+
+			events_since_timestamp="$(
+				date +%s
+			)"
+
+			container_id="$(
+				docker ps \
+					--quiet \
+					--filter "name=varnish.1"
+			)"
 
 			it "Returns a valid status on starting."
 				health_status="$(
 					docker inspect \
 						--format='{{json .State.Health.Status}}' \
-						varnish.pool-1.1.1
+						varnish.1
 				)"
 
 				assert __shpec_matcher_egrep \
@@ -1054,75 +1024,96 @@ function test_healthcheck ()
 					"\"(starting|healthy|unhealthy)\""
 			end
 
-			sleep $(
-				awk \
-					-v interval_seconds="${interval_seconds}" \
-					-v startup_time="${STARTUP_TIME}" \
-					'BEGIN { print 1 + interval_seconds + startup_time; }'
-			)
-
 			it "Returns healthy after startup."
+				events_timeout="$(
+					awk \
+						-v event_lag="${event_lag_seconds}" \
+						-v interval="${interval_seconds}" \
+						-v startup_time="${STARTUP_TIME}" \
+						'BEGIN { print event_lag + startup_time + interval; }'
+				)"
+
 				health_status="$(
-					docker inspect \
-						--format='{{json .State.Health.Status}}' \
-						varnish.pool-1.1.1
+					test/health_status \
+						--container="${container_id}" \
+						--since="${events_since_timestamp}" \
+						--timeout="${events_timeout}" \
+						--monochrome \
+					2>&1
 				)"
 
 				assert equal \
 					"${health_status}" \
-					"\"healthy\""
+					"✓ healthy"
 			end
 
 			it "Returns unhealthy on failure."
-				# mysqld-wrapper failure
 				docker exec -t \
-					varnish.pool-1.1.1 \
+					varnish.1 \
 					bash -c "mv \
 						/usr/sbin/varnishd \
 						/usr/sbin/varnishd2" \
 				&& docker exec -t \
-					varnish.pool-1.1.1 \
+					varnish.1 \
 					bash -c "if [[ -n \$(pgrep -f '^/usr/sbin/varnishd ') ]]; then \
 						kill -9 \$(pgrep -f '^/usr/sbin/varnishd ')
 					fi"
 
-				sleep $(
+				events_since_timestamp="$(
+					date +%s
+				)"
+
+				events_timeout="$(
 					awk \
-						-v interval_seconds="${interval_seconds}" \
+						-v event_lag="${event_lag_seconds}" \
+						-v interval="${interval_seconds}" \
 						-v retries="${retries}" \
-						'BEGIN { print 1 + interval_seconds * retries; }'
-				)
+						'BEGIN { print (2 * event_lag) + (interval * retries); }'
+				)"
 
 				health_status="$(
-					docker inspect \
-						--format='{{json .State.Health.Status}}' \
-						varnish.pool-1.1.1
+					test/health_status \
+						--container="${container_id}" \
+						--since="$(( ${event_lag_seconds} + ${events_since_timestamp} ))" \
+						--timeout="${events_timeout}" \
+						--monochrome \
+					2>&1
 				)"
 
 				assert equal \
 					"${health_status}" \
-					"\"unhealthy\""
+					"✗ unhealthy"
 			end
 		end
 
-		__terminate_container \
-			varnish.pool-1.1.1 \
-		&> /dev/null
-
 		describe "Enable varnishncsa-wrapper"
+			__terminate_container \
+				varnish.1 \
+			&> /dev/null
+
 			docker run \
 				--detach \
-				--name varnish.pool-1.1.1 \
+				--name varnish.1 \
 				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
 				--network ${backend_network} \
 				jdeathe/centos-ssh-varnish:latest \
 			&> /dev/null
 
+			events_since_timestamp="$(
+				date +%s
+			)"
+
+			container_id="$(
+				docker ps \
+					--quiet \
+					--filter "name=varnish.1"
+			)"
+
 			it "Returns a valid status on starting."
 				health_status="$(
 					docker inspect \
 						--format='{{json .State.Health.Status}}' \
-						varnish.pool-1.1.1
+						varnish.1
 				)"
 
 				assert __shpec_matcher_egrep \
@@ -1130,45 +1121,59 @@ function test_healthcheck ()
 					"\"(starting|healthy|unhealthy)\""
 			end
 
-			sleep $(
-				awk \
-					-v interval_seconds="${interval_seconds}" \
-					-v startup_time="${STARTUP_TIME}" \
-					'BEGIN { print 1 + interval_seconds + startup_time; }'
-			)
-
 			it "Returns healthy after startup."
+				events_timeout="$(
+					awk \
+						-v event_lag="${event_lag_seconds}" \
+						-v interval="${interval_seconds}" \
+						-v startup_time="${STARTUP_TIME}" \
+						'BEGIN { print event_lag + startup_time + interval; }'
+				)"
+
 				health_status="$(
-					docker inspect \
-						--format='{{json .State.Health.Status}}' \
-						varnish.pool-1.1.1
+					test/health_status \
+						--container="${container_id}" \
+						--since="${events_since_timestamp}" \
+						--timeout="${events_timeout}" \
+						--monochrome \
+					2>&1
 				)"
 
 				assert equal \
 					"${health_status}" \
-					"\"healthy\""
+					"✓ healthy"
 			end
 		end
 
-		__terminate_container \
-			varnish.pool-1.1.1 \
-		&> /dev/null
-
 		describe "Disable all"
+			__terminate_container \
+				varnish.1 \
+			&> /dev/null
+
 			docker run \
 				--detach \
-				--name varnish.pool-1.1.1 \
+				--name varnish.1 \
 				--env VARNISH_AUTOSTART_VARNISHD_WRAPPER=false \
 				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=false \
 				--network ${backend_network} \
 				jdeathe/centos-ssh-varnish:latest \
 			&> /dev/null
 
+			events_since_timestamp="$(
+				date +%s
+			)"
+
+			container_id="$(
+				docker ps \
+					--quiet \
+					--filter "name=varnish.1"
+			)"
+
 			it "Returns a valid status on starting."
 				health_status="$(
 					docker inspect \
 						--format='{{json .State.Health.Status}}' \
-						varnish.pool-1.1.1
+						varnish.1
 				)"
 
 				assert __shpec_matcher_egrep \
@@ -1176,33 +1181,37 @@ function test_healthcheck ()
 					"\"(starting|healthy|unhealthy)\""
 			end
 
-			sleep $(
-				awk \
-					-v interval_seconds="${interval_seconds}" \
-					-v startup_time="${STARTUP_TIME}" \
-					'BEGIN { print 1 + interval_seconds + startup_time; }'
-			)
-
 			it "Returns healthy after startup."
+				events_timeout="$(
+					awk \
+						-v event_lag="${event_lag_seconds}" \
+						-v interval="${interval_seconds}" \
+						-v startup_time="${STARTUP_TIME}" \
+						'BEGIN { print event_lag + startup_time + interval; }'
+				)"
+
 				health_status="$(
-					docker inspect \
-						--format='{{json .State.Health.Status}}' \
-						varnish.pool-1.1.1
+					test/health_status \
+						--container="${container_id}" \
+						--since="${events_since_timestamp}" \
+						--timeout="${events_timeout}" \
+						--monochrome \
+					2>&1
 				)"
 
 				assert equal \
 					"${health_status}" \
-					"\"healthy\""
+					"✓ healthy"
 			end
-
-			__terminate_container \
-				varnish.pool-1.1.1 \
-			&> /dev/null
 		end
-	end
 
-	trap - \
-		INT TERM EXIT
+		__terminate_container \
+			varnish.1 \
+		&> /dev/null
+
+		trap - \
+			INT TERM EXIT
+	end
 }
 
 if [[ ! -d ${TEST_DIRECTORY} ]]; then

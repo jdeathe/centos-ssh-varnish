@@ -12,9 +12,9 @@ readonly TIMER_START="$(
 )"
 readonly USER="varnish"
 readonly SECRET_PATH="/etc/varnish/secret"
-readonly VARNISHNCSA_GROUP="varnish"
-readonly VARNISHNCSA_LOG_FILE="/var/log/varnish/access_log"
-readonly VARNISHNCSA_USER="varnishlog"
+# readonly VARNISHNCSA_GROUP="varnish"
+# readonly VARNISHNCSA_LOG_FILE="/var/log/varnish/access_log"
+# readonly VARNISHNCSA_USER="varnishlog"
 readonly VARNISHNCSA_WRAPPER="/usr/sbin/varnishncsa-wrapper"
 
 OPTIONS=""
@@ -33,13 +33,13 @@ function populate_psk_secret_file ()
 	if [[ ! -s ${file_path} ]]
 	then
 		printf -- \
-			"Populating Varnish PSK secret file.\n"
+			'Populating Varnish PSK secret file.\n'
 
 		dd \
 			if=/dev/urandom \
 			of="${file_path}" \
 			count=1 \
-		&> /dev/null
+			&> /dev/null
 
 		chown \
 			${user}:${group} \
@@ -51,26 +51,26 @@ function populate_psk_secret_file ()
 	fi
 }
 
-function set_log_write_user ()
-{
-	local file_path="${1:-}"
-	local user="${2:-}"
-	local group="${3:-}"
-
-	if [[ ! -f ${file_path} ]]
-	then
-		touch \
-			"${file_path}"
-	fi
-
-	chown \
-		"${user}":"${group}" \
-		"${file_path}"
-
-	chmod \
-		0660 \
-		"${file_path}"
-}
+# function set_log_write_user ()
+# {
+# 	local file_path="${1:-}"
+# 	local user="${2:-}"
+# 	local group="${3:-}"
+# 
+# 	if [[ ! -f ${file_path} ]]
+# 	then
+# 		touch \
+# 			"${file_path}"
+# 	fi
+# 
+# 	chown \
+# 		"${user}":"${group}" \
+# 		"${file_path}"
+# 
+# 	chmod \
+# 		0660 \
+# 		"${file_path}"
+# }
 
 function set_varnish_vcl_conf ()
 {
@@ -88,17 +88,15 @@ function set_varnish_vcl_conf ()
 		fi
 
 		if [[ ! ${value} =~ ${pattern_plain_text} ]]; then
-			printf -- \
-				'ERROR: Invalid VCL File\n' \
-				>&2
-			sleep 0.1
+			>&2 printf -- \
+				'ERROR: Invalid VCL File\n'
 			exit 1
 		fi
 
 		printf \
 			-- '%s' \
 			"${value}" \
-		> /etc/services-config/varnish/docker-default.vcl
+			> /etc/varnish/docker-default.vcl
 
 		unset VARNISH_VCL_CONF
 	fi
@@ -128,10 +126,10 @@ set_wrapper_execute_group \
 	"${VARNISHNCSA_WRAPPER}" \
 	"${VARNISHNCSA_GROUP}"
 
-set_log_write_user \
-	"${VARNISHNCSA_LOG_FILE}" \
-	"${VARNISHNCSA_USER}" \
-	"${VARNISHNCSA_GROUP}"
+# set_log_write_user \
+# 	"${VARNISHNCSA_LOG_FILE}" \
+# 	"${VARNISHNCSA_USER}" \
+# 	"${VARNISHNCSA_GROUP}"
 
 set_varnish_vcl_conf \
 	"${VARNISH_VCL_CONF}"

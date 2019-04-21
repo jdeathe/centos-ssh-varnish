@@ -36,11 +36,11 @@ For cases where access to docker exec is not possible the preferred method is to
 
 ## Quick Example
 
-Run up a container named `varnish.pool-1.1.1` from the docker image `jdeathe/centos-ssh-varnish` on port 80 of your docker host. 1 backend host is defined with the IP address 172.17.8.101; this is required to identify the backend hosts from within the Varnish VCL file.
+Run up a container named `varnish.1` from the docker image `jdeathe/centos-ssh-varnish` on port 80 of your docker host. 1 backend host is defined with the IP address 172.17.8.101; this is required to identify the backend hosts from within the Varnish VCL file.
 
 ```
 $ docker run -d -t \
-  --name varnish.pool-1.1.1 \
+  --name varnish.1 \
   -p 80:80 \
   --sysctl "net.core.somaxconn=1024" \
   --add-host httpd_1:172.17.8.101 \
@@ -50,7 +50,7 @@ $ docker run -d -t \
 Now you can verify it is initialised and running successfully by inspecting the container's logs.
 
 ```
-$ docker logs varnish.pool-1.1.1
+$ docker logs varnish.1
 ```
 
 ## Instructions
@@ -64,12 +64,12 @@ In the following example the http service is bound to port 8000 and offloaded ht
 #### Using environment variables
 
 ```
-$ docker stop varnish.pool-1.1.1 && \
-  docker rm varnish.pool-1.1.1
+$ docker stop varnish.1 && \
+  docker rm varnish.1
 $ docker run \
   --detach \
   --tty \
-  --name varnish.pool-1.1.1 \
+  --name varnish.1 \
   --publish 8000:80 \
   --publish 8500:8443 \
   --sysctl "net.core.somaxconn=1024" \
@@ -88,7 +88,7 @@ $ docker run \
 Now you can verify it is initialised and running successfully by inspecting the container's logs:
 
 ```
-$ docker logs varnish.pool-1.1.1
+$ docker logs varnish.1
 ```
 
 #### Environment Variables

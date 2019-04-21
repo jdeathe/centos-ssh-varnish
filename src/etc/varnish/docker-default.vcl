@@ -3,9 +3,9 @@ vcl 4.0;
 import directors;
 import std;
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Healthcheck probe (basic)
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 probe healthcheck {
 	.interval = 5s;
 	.timeout = 2s;
@@ -21,30 +21,30 @@ probe healthcheck {
 		"Accept-Encoding: gzip, deflate";
 }
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # HTTP Backends
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 backend http_1 { .host = "httpd_1"; .port = "80"; .first_byte_timeout = 300s; .probe = healthcheck; }
 
-# -----------------------------------------------------------------------------
-# HTTP (HTTPS Terminated) Backends
-# -----------------------------------------------------------------------------
-backend terminated_https_1 { .host = "httpd_1"; .port = "8443"; .first_byte_timeout = 300s; .probe = healthcheck; }
+# ------------------------------------------------------------------------------
+# PROXY (HTTPS Terminated) Backends
+# ------------------------------------------------------------------------------
+backend proxy_1 { .host = "httpd_1"; .port = "8443"; .first_byte_timeout = 300s; .probe = healthcheck; }
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Directors
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 sub vcl_init {
 	new director_http = directors.round_robin();
 	director_http.add_backend(http_1);
 
-	new director_terminated_https = directors.round_robin();
-	director_terminated_https.add_backend(terminated_https_1);
+	new director_proxy = directors.round_robin();
+	director_proxy.add_backend(proxy_1);
 }
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Client side
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 sub vcl_recv {
 	if (req.method == "PRI") {
 		# Reject SPDY or HTTP/2.0 with Method Not Allowed
@@ -61,7 +61,7 @@ sub vcl_recv {
 		# SSL Terminated upstream so indcate this with a custom header
 		set req.http.X-Forwarded-Port = "443";
 		set req.http.X-Forwarded-Proto = "https";
-		set req.backend_hint = director_terminated_https.backend();
+		set req.backend_hint = director_proxy.backend();
 	} else if (std.port(server.ip) == 80 ||
 		std.port(local.ip) == 80) {
 		# Default to HTTP
@@ -168,9 +168,9 @@ sub vcl_deliver {
 	return (deliver);
 }
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Backend
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 sub vcl_backend_response {
 	# Keep objects beyond their ttl
 	set beresp.grace = 6h;

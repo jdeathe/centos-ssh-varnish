@@ -8,6 +8,7 @@ readonly NICENESS="10"
 readonly OPTIONS="-a
  -c
  -P /var/run/varnish/varnishncsa.pid
+ -F "${FORMAT}"
 "
 
 while true
@@ -16,8 +17,7 @@ do
 	[[ -e ${LOCK_FILE} ]] || break
 done
 
-exec ${NICE} \
+eval "exec ${NICE} \
 	-n ${NICENESS} \
 	${BIN} \
-	${OPTIONS} \
-	-F "${FORMAT}"
+	${OPTIONS}"
