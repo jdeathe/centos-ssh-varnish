@@ -100,32 +100,8 @@ sub vcl_recv {
 		return (pass);
 	}
 
-	# Cache static assets
-	if (req.url ~ "\.(gif|png|jpe?g|ico|svg|css|js|html?|txt|eot|woff|woff2|ttf)$") {
-		unset req.http.Cookie;
-		return (hash);
-	}
-
-	# Remove all cookies that we doesn't need to know about. e.g. 3rd party analytics cookies
-	if (req.http.Cookie) {
-		set req.http.Cookie = ";" + req.http.Cookie;
-		set req.http.Cookie = regsuball(req.http.Cookie, "; +", ";");
-		set req.http.Cookie = regsuball(req.http.Cookie, ";(PHPSESSID|app-session)=", "; \1=");
-		set req.http.Cookie = regsuball(req.http.Cookie, ";[^ ][^;]*", "");
-		set req.http.Cookie = regsuball(req.http.Cookie, "^[; ]+|[; ]+$", "");
-
-		if (req.http.Cookie == "") {
-			unset req.http.Cookie;
-		}
-	}
-
-	# Non-cacheable requests
-	if (req.http.Authorization || 
-		req.http.Cookie) {
-		return (pass);
-	}
-
-	return (hash);
+	set req.http.X-Cookie = req.http.Cookie;
+	unset req.http.Cookie;
 }
 
 sub vcl_hash {
@@ -139,6 +115,11 @@ sub vcl_hash {
 
 	if (req.http.X-Forwarded-Proto) {
 		hash_data(req.http.X-Forwarded-Proto);
+	}
+
+	if (req.http.X-Cookie) {
+		set req.http.Cookie = req.http.X-Cookie;
+		unset req.http.X-Cookie;
 	}
 
 	return (lookup);
