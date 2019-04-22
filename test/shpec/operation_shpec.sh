@@ -854,7 +854,7 @@ function test_custom_configuration ()
 			varnish.1 \
 		&> /dev/null
 
-		it "Outputs in combined format"
+		it "Outputs in combined format."
 			docker run \
 				--detach \
 				--name varnish.1 \
@@ -911,7 +911,7 @@ function test_custom_configuration ()
 			varnish.1 \
 		&> /dev/null
 
-		it "Outputs in custom format"
+		it "Outputs in custom format."
 			docker run \
 				--detach \
 				--name varnish.1 \

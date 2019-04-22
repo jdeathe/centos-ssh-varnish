@@ -5,11 +5,9 @@ readonly FORMAT="${VARNISH_VARNISHNCSA_FORMAT:-"%h %l %u %t \"%r\" %s %b \"%{Ref
 readonly LOCK_FILE="/var/lock/subsys/varnishd-wrapper"
 readonly NICE="/bin/nice"
 readonly NICENESS="10"
-readonly OPTIONS="-a
- -c
- -P /var/run/varnish/varnishncsa.pid
- -F "${FORMAT}"
-"
+readonly PID_PATH="/var/run/varnish/varnishncsa.pid"
+
+readonly OPTIONS="-a -c -P ${PID_PATH} -F \"${FORMAT//\"/\\\"}\""
 
 while true
 do
