@@ -61,6 +61,8 @@ services:
     depends_on:
       - "memcached"
     environment:
+      APACHE_CUSTOM_LOG_LOCATION: "/dev/null"
+      APACHE_ERROR_LOG_LOCATION: "/dev/stderr"
       APACHE_MOD_SSL_ENABLED: "false"
       APACHE_MPM: "event"
       APACHE_SERVER_ALIAS: "app.local"
