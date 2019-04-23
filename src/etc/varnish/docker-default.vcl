@@ -84,7 +84,7 @@ sub vcl_recv {
 		return (pipe);
 	}
 
-	if (req.method != "GET" && 
+	if (req.method != "GET" &&
 		req.method != "HEAD") {
 		# Only deal with GET and HEAD by default
 		return (pass);
@@ -130,7 +130,7 @@ sub vcl_hit {
 		return (deliver);
 	}
 
-	if (std.healthy(req.backend_hint) && 
+	if (std.healthy(req.backend_hint) &&
 		obj.ttl + 15s > 0s) {
 		# set req.http.X-Varnish-Grace = "normal";
 		return (deliver);
@@ -159,7 +159,7 @@ sub vcl_backend_response {
 	if (beresp.ttl <= 0s ||
 		beresp.http.Set-Cookie ||
 		beresp.http.Surrogate-control ~ "no-store" ||
-		( ! beresp.http.Surrogate-Control && 
+		( ! beresp.http.Surrogate-Control &&
 			beresp.http.Cache-Control ~ "(private|no-cache|no-store)") ||
 		beresp.http.Vary == "*") {
 		# Mark as "Hit-For-Pass" for the next 2 minutes
