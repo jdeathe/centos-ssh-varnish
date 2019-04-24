@@ -920,6 +920,8 @@ function test_custom_configuration ()
 				http://127.0.0.1:${container_port_80}/ \
 			&> /dev/null
 
+			sleep 2
+
 			docker logs \
 				--tail 1 \
 				varnish.1 \
@@ -977,6 +979,8 @@ function test_custom_configuration ()
 				-H "Host: ${backend_hostname}" \
 				http://127.0.0.1:${container_port_80}/ \
 			&> /dev/null
+
+			sleep 2
 
 			docker logs \
 				--tail 1 \
