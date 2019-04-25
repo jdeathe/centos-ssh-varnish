@@ -14,6 +14,10 @@
 #
 # Usage:
 # docker-compose exec varnish varnishadm
+# docker-compose exec varnish varnishadm ban "req.url ~ (\\\.css|\\\.js)"
+# docker-compose exec varnish varnishadm ban "req.url ~ ."
+# docker-compose exec varnish varnishadm ban.list
+# docker-compose exec varnish varnishlog -c -q 'ReqURL ~ "/$"'
 # ------------------------------------------------------------------------------
 version: "3.0"
 networks:
