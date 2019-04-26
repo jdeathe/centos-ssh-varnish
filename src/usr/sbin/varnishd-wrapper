@@ -145,9 +145,7 @@ function __set_varnish_vcl_conf ()
 
 function main ()
 {
-	# local -r autostart_bootstrap="${VARNISH_AUTOSTART_VARNISHD_BOOTSTRAP:-true}"
 	local -r bin="/usr/sbin/varnishd"
-	# local -r bootstrap_state_file="/var/lib/misc/varnishd-bootstrap"
 	local -r lock_file="/var/lock/subsys/varnishd-wrapper"
 	local -r nice="/bin/nice"
 	local -r niceness="10"
@@ -166,17 +164,6 @@ function main ()
 	local varnish_ttl
 	local varnish_vcl_conf
 	local verbose="false"
-
-	# if [[ ${autostart_bootstrap} == false ]]
-	# then
-	# 	# block.
-	# 	sleep infinity
-	# fi
-
-	# until [[ -e ${bootstrap_state_file} ]]
-	# do
-	# 	sleep 0.1
-	# done
 
 	# Parse options
 	while [[ "${#}" -gt 0 ]]
