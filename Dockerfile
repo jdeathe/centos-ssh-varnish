@@ -45,10 +45,10 @@ RUN sed -i \
 		-e "s~{{RELEASE_VERSION}}~${RELEASE_VERSION}~g" \
 		/etc/systemd/system/centos-ssh-varnish@.service \
 	&& mkdir -p \
-		/var/run/varnish \
+		/var/{lib/misc,lock/subsys,run}/varnish \
 	&& chown \
 		varnishlog:varnish \
-		/var/run/varnish \
+		/var/{lib/misc,lock/subsys,run}/varnish \
 	&& chmod 644 \
 		/etc/varnish/*.vcl \
 	&& chmod 700 \

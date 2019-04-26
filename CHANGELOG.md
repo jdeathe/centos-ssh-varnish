@@ -23,6 +23,8 @@ CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.1.
 - Adds improved logging output.
 - Adds docker-compose configuration example.
 - Adds improved/simplified Cookie logic in `docker-default.vcl`.
+- Adds improved `healtchcheck`, `varnishd-wrapper` and `varnishncsa-wrapper` scripts.
+- Adds improved lock/state file implementation in wrapper scripts.
 - Removes use of `/etc/services-config` paths.
 - Removes the unused group element from the default container name.
 - Removes the node element from the default container name.

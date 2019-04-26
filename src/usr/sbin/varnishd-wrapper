@@ -2,38 +2,97 @@
 
 set -e
 
-readonly BIN="/usr/sbin/varnishd"
-readonly GROUP="varnish"
-readonly LOCK_FILE="/var/lock/subsys/varnishd-wrapper"
-readonly NICE="/bin/nice"
-readonly NICENESS="10"
-readonly TIMER_START="$(
-	date +%s.%N
-)"
-readonly USER="varnish"
-readonly SECRET_PATH="/etc/varnish/secret"
-# readonly VARNISHNCSA_GROUP="varnish"
-# readonly VARNISHNCSA_LOG_FILE="/var/log/varnish/access_log"
-# readonly VARNISHNCSA_USER="varnishlog"
-readonly VARNISHNCSA_WRAPPER="/usr/sbin/varnishncsa-wrapper"
-
-OPTIONS=""
-VARNISHNCSA_FORMAT=""
-
-# Create lock file
-touch \
-	"${LOCK_FILE}"
-
-function populate_psk_secret_file ()
+function __cleanup ()
 {
-	local file_path="${1:-/etc/varnish/secret}"
-	local user="${2:-varnish}"
-	local group="${3:-varnish}"
+	local -r lock_file="${1}"
+
+	rm -f "${lock_file}"
+}
+
+function __get_options ()
+{
+	#TODO getters with validation where possible.
+	local -r max_threads="${5:-"${VARNISH_MAX_THREADS:-1000}"}"
+	local -r min_threads="${4:-"${VARNISH_MIN_THREADS:-50}"}"
+	local -r options="${7:-"${VARNISH_OPTIONS}"}"
+	local -r storage="${2:-"${VARNISH_STORAGE:-file,/var/lib/varnish/varnish_storage.bin,1G}"}"
+	local -r thread_timeout="${6:-"${VARNISH_THREAD_TIMEOUT:-120}"}"
+	local -r ttl="${3:-"${VARNISH_TTL:-120}"}"
+	local -r vcl_path="${1:-"$(
+		__get_varnish_vcl_conf_path
+	)"}"
+
+	printf -- \
+		'-j %s -F -P %s -S %s -s %s -a %s -f %s -T %s -t %u -p %s -p %s -p %s%s%s' \
+		"unix,user=varnish,ccgroup=varnish" \
+		"/var/run/varnish.pid" \
+		"/etc/varnish/secret" \
+		"${storage}" \
+		"0.0.0.0:80 -a 0.0.0.0:8443,PROXY" \
+		"${vcl_path}" \
+		"127.0.0.1:6082" \
+		"${ttl}" \
+		"thread_pool_min=${min_threads}" \
+		"thread_pool_max=${max_threads}" \
+		"thread_pool_timeout=${thread_timeout}" \
+		"${options:+" "}" \
+		"${options}"
+}
+
+function __get_timer_total ()
+{
+	local -r timer_end="$(
+		date +%s.%N
+	)"
+	local -r timer_start="${1}"
+
+	if [[ -z ${timer_start} ]] \
+		|| [[ ${timer_start//.} -gt ${timer_end//.} ]]
+	then
+		>&2 printf -- \
+			'ERROR: invalid timer start: %s\n' \
+			"${timer_start}"
+		printf -- \
+			'0.000000'
+	else
+		awk \
+			-v timer_end="${timer_end}" \
+			-v timer_start="${timer_start}" \
+			'BEGIN { print \
+				timer_end - timer_start;
+			}'
+	fi
+}
+
+function __get_varnish_vcl_conf_path ()
+{
+	local -r value="${VARNISH_VCL_CONF}"
+
+	if [[ -s ${value} ]]
+	then
+		printf -- '%s' "${value}"
+	else
+		printf -- \
+			'%s' \
+			"/etc/varnish/docker-default.vcl"
+	fi
+}
+
+function __populate_psk_secret_file ()
+{
+	local -r file_path="${1:-/etc/varnish/secret}"
+	local -r user="${2:-varnish}"
+	local -r group="${3:-varnish}"
+
+	local verbose="${verbose:-false}"
 
 	if [[ ! -s ${file_path} ]]
 	then
-		printf -- \
-			'Populating Varnish PSK secret file.\n'
+		if [[ ${verbose} == true ]]
+		then
+			printf -- \
+				'INFO: Populating Varnish PSK secret file\n'
+		fi
 
 		dd \
 			if=/dev/urandom \
@@ -51,43 +110,27 @@ function populate_psk_secret_file ()
 	fi
 }
 
-# function set_log_write_user ()
-# {
-# 	local file_path="${1:-}"
-# 	local user="${2:-}"
-# 	local group="${3:-}"
-# 
-# 	if [[ ! -f ${file_path} ]]
-# 	then
-# 		touch \
-# 			"${file_path}"
-# 	fi
-# 
-# 	chown \
-# 		"${user}":"${group}" \
-# 		"${file_path}"
-# 
-# 	chmod \
-# 		0660 \
-# 		"${file_path}"
-# }
-
-function set_varnish_vcl_conf ()
+function __set_varnish_vcl_conf ()
 {
 	local -r pattern_base64='^[A-Za-z0-9/+=]*$'
 	local -r pattern_plain_text='.*vcl 4.0;.*'
 
-	local value="${1:-}"
+	#TODO getter
+	local value="${1:-"${VARNISH_VCL_CONF}"}"
 
-	if [[ -n ${value} ]] && [[ ! -s ${value} ]]; then
+	if [[ -n ${value} ]] \
+		&& [[ ! -s ${value} ]]
+	then
 		# Decode base64 encoded values
-		if [[ ${value} =~ ${pattern_base64} ]]; then
+		if [[ ${value} =~ ${pattern_base64} ]]
+		then
 			value="$(
 				base64 -d -i <<< "${value}"
 			)"
 		fi
 
-		if [[ ! ${value} =~ ${pattern_plain_text} ]]; then
+		if [[ ! ${value} =~ ${pattern_plain_text} ]]
+		then
 			>&2 printf -- \
 				'ERROR: Invalid VCL File\n'
 			exit 1
@@ -97,93 +140,148 @@ function set_varnish_vcl_conf ()
 			-- '%s' \
 			"${value}" \
 			> /etc/varnish/docker-default.vcl
-
-		unset VARNISH_VCL_CONF
 	fi
 }
 
-function set_wrapper_execute_group ()
+function main ()
 {
-	local file_path="${1:-}"
-	local group="${2:-}"
+	# local -r autostart_bootstrap="${VARNISH_AUTOSTART_VARNISHD_BOOTSTRAP:-true}"
+	local -r bin="/usr/sbin/varnishd"
+	# local -r bootstrap_state_file="/var/lib/misc/varnishd-bootstrap"
+	local -r lock_file="/var/lock/subsys/varnishd-wrapper"
+	local -r nice="/bin/nice"
+	local -r niceness="10"
+	local -r state_file="/var/lib/misc/varnishd-wrapper"
+	local -r timer_start="$(
+		date +%s.%N
+	)"
 
-	chgrp \
-		"${group}" \
-		"${file_path}"
+	local options
+	local timer_total
+	local varnish_max_threads
+	local varnish_min_threads
+	local varnish_options
+	local varnish_storage
+	local varnish_thread_timeout
+	local varnish_ttl
+	local varnish_vcl_conf
+	local verbose="false"
 
-	chmod \
-		0750 \
-		"${file_path}"
+	# if [[ ${autostart_bootstrap} == false ]]
+	# then
+	# 	# block.
+	# 	sleep infinity
+	# fi
+
+	# until [[ -e ${bootstrap_state_file} ]]
+	# do
+	# 	sleep 0.1
+	# done
+
+	# Parse options
+	while [[ "${#}" -gt 0 ]]
+	do
+		case "${1}" in
+			-v|--verbose)
+				verbose="true"
+				shift 1
+				;;
+		esac
+	done
+
+	if [[ -e ${lock_file} ]]
+	then
+		>&2 printf -- \
+			'ERROR: %s lock detected - aborting.\n' \
+			"${0##*/}"
+		exit 1
+	fi
+
+	trap \
+		"__cleanup \"${lock_file}\"" \
+		INT TERM EXIT
+
+	# Create lock
+	touch \
+		"${lock_file}"
+
+	if [[ ${verbose} == true ]] \
+		&& [[ ! -e ${state_file} ]]
+	then
+		#TODO getters with validation where possible.
+		varnish_max_threads="${VARNISH_MAX_THREADS:-1000}"
+		varnish_min_threads="${VARNISH_MIN_THREADS:-50}"
+		varnish_options="${VARNISH_OPTIONS}"
+		varnish_storage="${VARNISH_STORAGE:-file,/var/lib/varnish/varnish_storage.bin,1G}"
+		varnish_thread_timeout="${VARNISH_THREAD_TIMEOUT:-120}"
+		varnish_ttl="${VARNISH_TTL:-120}"
+		varnish_vcl_conf="$(
+			__get_varnish_vcl_conf_path
+		)"
+
+		__populate_psk_secret_file
+		__set_varnish_vcl_conf
+
+		options="$(
+			__get_options \
+				"${varnish_vcl_conf}" \
+				"${varnish_storage}" \
+				"${varnish_ttl}" \
+				"${varnish_min_threads}" \
+				"${varnish_max_threads}" \
+				"${varnish_thread_timeout}" \
+				"${varnish_options}"
+		)"
+
+		timer_total="$(
+			__get_timer_total \
+				"${timer_start}"
+		)"
+
+		cat \
+			<<-EOT
+
+			================================================================================
+			Varnish Details
+			--------------------------------------------------------------------------------
+			vcl : ${varnish_vcl_conf}
+			storage : ${varnish_storage}
+			ttl : ${varnish_ttl}
+			thread_pool_min : ${varnish_min_threads}
+			thread_pool_max : ${varnish_max_threads}
+			thread_pool_timeout: ${varnish_thread_timeout}
+			varnishd options : ${varnish_options}
+			--------------------------------------------------------------------------------
+			${timer_total}
+
+		EOT
+	else
+		options="$(
+			__get_options
+		)"
+	fi
+
+	touch \
+		"${state_file}"
+
+	__cleanup \
+		"${lock_file}"
+
+	trap - \
+		INT TERM EXIT
+
+	if [[ ${verbose} == true ]]
+	then
+		printf -- \
+			'INFO: %s starting %s\n' \
+			"${0##*/}" \
+			"${bin##*/}"
+	fi
+
+	exec ${nice} \
+		-n ${niceness} \
+		${bin} \
+		${options}
 }
 
-# Ensure the secret PSK file is present.
-populate_psk_secret_file \
-	"${SECRET_PATH}" \
-	"${USER}" \
-	"${GROUP}"
-
-set_wrapper_execute_group \
-	"${VARNISHNCSA_WRAPPER}" \
-	"${VARNISHNCSA_GROUP}"
-
-# set_log_write_user \
-# 	"${VARNISHNCSA_LOG_FILE}" \
-# 	"${VARNISHNCSA_USER}" \
-# 	"${VARNISHNCSA_GROUP}"
-
-set_varnish_vcl_conf \
-	"${VARNISH_VCL_CONF}"
-
-OPTIONS="-j unix,user=${USER},ccgroup=${GROUP}
- -F
- -P /var/run/varnish.pid
- -a 0.0.0.0:80
- -a 0.0.0.0:8443,PROXY
- -f ${VARNISH_VCL_CONF:-/etc/varnish/docker-default.vcl}
- -T 127.0.0.1:6082
- -t ${VARNISH_TTL:-120}
- -p thread_pool_min=${VARNISH_MIN_THREADS:-50}
- -p thread_pool_max=${VARNISH_MAX_THREADS:-1000}
- -p thread_pool_timeout=${VARNISH_THREAD_TIMEOUT:-120}
- -S ${SECRET_PATH}
- -s ${VARNISH_STORAGE:-file,/var/lib/varnish/varnish_storage.bin,1G}
-"
-
-if [[ ${VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER} == true ]]
-then
-	VARNISHNCSA_FORMAT="${VARNISH_VARNISHNCSA_FORMAT:-"%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\""}"
-fi
-
-TIMER_TOTAL="$(
-	echo - | awk "\
-	{ T1=\"${TIMER_START}\" } \
-	{ T2=\"$(date +%s.%N)\" } \
-	{ print T2 - T1; }"
-)"
-
-cat \
-	<<-EOT
-
-	================================================================================
-	Varnish Details
-	--------------------------------------------------------------------------------
-	vcl : ${VARNISH_VCL_CONF:-/etc/varnish/docker-default.vcl}
-	storage : ${VARNISH_STORAGE:-file,/var/lib/varnish/varnish_storage.bin,1G}
-	ttl : ${VARNISH_TTL:-120}
-	thread_pool_min : ${VARNISH_MIN_THREADS:-50}
-	thread_pool_max : ${VARNISH_MAX_THREADS:-1000}
-	thread_pool_timeout: ${VARNISH_THREAD_TIMEOUT:-120}
-	varnishncsa format : ${VARNISHNCSA_FORMAT:-N/A}
-	--------------------------------------------------------------------------------
-	${TIMER_TOTAL}
-
-EOT
-
-# Release lock file
-rm -f \
-	"${LOCK_FILE}"
-
-exec ${NICE} \
-	-n ${NICENESS} \
-	${BIN} \
-	${OPTIONS}
+main "${@}"
