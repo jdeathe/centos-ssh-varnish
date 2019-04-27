@@ -77,58 +77,198 @@ function __get_timer_total ()
 
 function __get_varnish_max_threads ()
 {
-	local value="${VARNISH_MAX_THREADS:-1000}"
+	local -r default_value="${1:-1000}"
 
-	printf -- '%s' ${value}
+	local value="${VARNISH_MAX_THREADS}"
+
+	if ! __is_valid_varnish_max_threads "${value}"
+	then
+		value="${default_value}"
+	fi
+
+	printf -- '%s' "${value}"
 }
 
 function __get_varnish_min_threads ()
 {
-	local value="${VARNISH_MIN_THREADS:-50}"
+	local -r default_value="${1:-50}"
 
-	printf -- '%s' ${value}
+	local value="${VARNISH_MIN_THREADS}"
+
+	if ! __is_valid_varnish_min_threads "${value}"
+	then
+		value="${default_value}"
+	fi
+
+	printf -- '%s' "${value}"
 }
 
 function __get_varnish_options ()
 {
-	local value="${VARNISH_OPTIONS}"
-
-	printf -- '%s' ${value}
+	printf -- '%s' "${VARNISH_OPTIONS}"
 }
 
 function __get_varnish_storage ()
 {
-	local value="${VARNISH_STORAGE:-file,/var/lib/varnish/varnish_storage.bin,1G}"
+	local -r default_value="${1:-file,/var/lib/varnish/varnish_storage.bin,1G}"
 
-	printf -- '%s' ${value}
+	local value="${VARNISH_STORAGE}"
+
+	if ! __is_valid_varnish_storage "${value}"
+	then
+		value="${default_value}"
+	fi
+
+	printf -- '%s' "${value}"
 }
 
 function __get_varnish_thread_timeout ()
 {
-	local value="${VARNISH_THREAD_TIMEOUT:-120}"
+	local -r default_value="${1:-120}"
 
-	printf -- '%s' ${value}
+	local value="${VARNISH_THREAD_TIMEOUT}"
+
+	if ! __is_valid_varnish_thread_timeout "${value}"
+	then
+		value="${default_value}"
+	fi
+
+	printf -- '%s' "${value}"
 }
 
 function __get_varnish_ttl ()
 {
-	local value="${VARNISH_TTL:-120}"
+	local -r default_value="${1:-120}"
 
-	printf -- '%s' ${value}
+	local value="${VARNISH_TTL}"
+
+	if ! __is_valid_varnish_ttl "${value}"
+	then
+		value="${default_value}"
+	fi
+
+	printf -- '%s' "${value}"
+}
+
+function __get_varnish_vcl_conf ()
+{
+	local -r default_value="${1:-/etc/varnish/docker-default.vcl}"
+
+	local value="${VARNISH_VCL_CONF}"
+
+	if [[ -z ${value} ]]
+	then
+		value="${default_value}"
+	fi
+
+	printf -- '%s' "${value}"
 }
 
 function __get_varnish_vcl_conf_path ()
 {
-	local -r value="${VARNISH_VCL_CONF}"
+	local -r default_value="${1:-/etc/varnish/docker-default.vcl}"
 
-	if [[ -s ${value} ]]
+	local value="$(
+		__get_varnish_vcl_conf
+	)"
+
+	if [[ ! -s ${value} ]]
 	then
-		printf -- '%s' "${value}"
-	else
-		printf -- \
-			'%s' \
-			"/etc/varnish/docker-default.vcl"
+		value="${default_value}"
 	fi
+
+	printf -- '%s' "${value}"
+}
+
+function __is_valid_positive_integer ()
+{
+	local -r positive_integer='^[0-9]+$'
+	local -r value="${1}"
+
+	if [[ ${value} =~ ${positive_integer} ]]
+	then
+		return 0
+	fi
+
+	return 1
+}
+
+function __is_valid_varnish_max_threads ()
+{
+	local -r value="${1}"
+
+	if __is_valid_positive_integer "${value}" \
+		&& [[ ${value} -ge 100 ]]
+	then
+		return 0
+	fi
+
+	return 1
+}
+
+function __is_valid_varnish_min_threads ()
+{
+	local -r value="${1}"
+
+	if __is_valid_positive_integer "${value}" \
+		&& [[ ${value} -ge 10 ]] \
+		&& [[ ${value} -le 5000 ]]
+	then
+		return 0
+	fi
+
+	return 1
+}
+
+function __is_valid_varnish_storage ()
+{
+	local -r storage_pattern='^(malloc,?|file,\/)'
+	local -r value="${1}"
+
+	if [[ ${value} =~ ${storage_pattern} ]]
+	then
+		return 0
+	fi
+
+	return 1
+}
+
+function __is_valid_varnish_thread_timeout ()
+{
+	local -r value="${1}"
+
+	if __is_valid_positive_integer "${value}" \
+		&& [[ ${value} -ge 10 ]]
+	then
+		return 0
+	fi
+
+	return 1
+}
+
+function __is_valid_varnish_ttl ()
+{
+	__is_valid_positive_integer "${@}"
+}
+
+function __get_varnishd_version ()
+{
+	local semantic_version
+
+	if ! command -v varnishd &> /dev/null
+	then
+		>&2 printf -- \
+			'ERROR: varnishd binary not installed\n'
+		return 1
+	fi
+
+	semantic_version="$(
+		2>&1 varnishd -V \
+		| grep -E -o 'varnish-\/[0-9]+\.[0-9]+\.[0-9]+' \
+		| awk -F'-' '{ print $NF; }'
+	)"
+
+	printf -- '%s' "${semantic_version}"
 }
 
 function __populate_psk_secret_file ()
@@ -167,9 +307,11 @@ function __set_varnish_vcl_conf ()
 {
 	local -r pattern_base64='^[A-Za-z0-9/+=]*$'
 	local -r pattern_plain_text='.*vcl 4.0;.*'
+	local -r vcl_path="/etc/varnish/docker-default.vcl"
 
-	#TODO getter
-	local value="${1:-"${VARNISH_VCL_CONF}"}"
+	local value="${1:-"$(
+		__get_varnish_vcl_conf
+	)"}"
 
 	if [[ -n ${value} ]] \
 		&& [[ ! -s ${value} ]]
@@ -192,7 +334,7 @@ function __set_varnish_vcl_conf ()
 		printf \
 			-- '%s' \
 			"${value}" \
-			> /etc/varnish/docker-default.vcl
+			> "${vcl_path}"
 	fi
 }
 
@@ -232,7 +374,7 @@ function main ()
 	if [[ -e ${lock_file} ]]
 	then
 		>&2 printf -- \
-			'ERROR: %s lock detected - aborting.\n' \
+			'ERROR: %s lock detected - aborting\n' \
 			"${0##*/}"
 		exit 1
 	fi

@@ -53,11 +53,13 @@ function __get_timer_total ()
 
 function __get_varnish_varnishncsa_format ()
 {
+	local -r default_value="${1:-"%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\""}"
+
 	local value="${VARNISH_VARNISHNCSA_FORMAT}"
 
 	if [[ -z ${value} ]]
 	then
-		value="%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\""
+		value="${default_value}"
 	fi
 
 	printf -- '%s' "${value}"
@@ -65,9 +67,7 @@ function __get_varnish_varnishncsa_format ()
 
 function __get_varnish_varnishncsa_options ()
 {
-	local value="${VARNISH_VARNISHNCSA_OPTIONS}"
-
-	printf -- '%s' "${value}"
+	printf -- '%s' "${VARNISH_VARNISHNCSA_OPTIONS}"
 }
 
 function main ()
