@@ -67,10 +67,12 @@ Environment="VARNISH_AUTOSTART_VARNISHD_WRAPPER=true"
 Environment="VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=false"
 Environment="VARNISH_MAX_THREADS=1000"
 Environment="VARNISH_MIN_THREADS=50"
+Environment="VARNISH_OPTIONS="
 Environment="VARNISH_STORAGE=file,/var/lib/varnish/varnish_storage.bin,1G"
 Environment="VARNISH_THREAD_TIMEOUT=120"
 Environment="VARNISH_TTL=120"
 Environment="VARNISH_VARNISHNCSA_FORMAT=%%h %%l %%u %%t \"%%r\" %%s %%b \"%%{Referer}i\" \"%%{User-agent}i\""
+Environment="VARNISH_VARNISHNCSA_OPTIONS="
 Environment="VARNISH_VCL_CONF=/etc/varnish/docker-default.vcl"
 
 # Initialisation: Load image from local storage if available, otherwise pull.
@@ -139,10 +141,12 @@ ExecStart=/bin/bash -c \
     --env \"VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=${VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER}\" \
     --env \"VARNISH_MAX_THREADS=${VARNISH_MAX_THREADS}\" \
     --env \"VARNISH_MIN_THREADS=${VARNISH_MIN_THREADS}\" \
+    --env \"VARNISH_OPTIONS=${VARNISH_OPTIONS}\" \
     --env \"VARNISH_STORAGE=${VARNISH_STORAGE}\" \
     --env \"VARNISH_THREAD_TIMEOUT=${VARNISH_THREAD_TIMEOUT}\" \
     --env \"VARNISH_TTL=${VARNISH_TTL}\" \
     --env \"VARNISH_VARNISHNCSA_FORMAT=${VARNISH_VARNISHNCSA_FORMAT}\" \
+    --env \"VARNISH_VARNISHNCSA_OPTIONS=${VARNISH_VARNISHNCSA_OPTIONS}\" \
     --env \"VARNISH_VCL_CONF=${VARNISH_VCL_CONF}\" \
     $(if [[ ${DOCKER_PORT_MAP_TCP_80} != NULL ]]; \
     then \

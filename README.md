@@ -103,22 +103,30 @@ It may be desirable to prevent the startup of the varnishd-wrapper script. For e
 
 Controls the startup of the varnishncsa-wrapper script which is not started by default. With `VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER` set to `true` the `varnishncsa` process is started to output the Varnish in-memory logs to the log file `/var/log/varnish/access_log`. Logs are in Apache / NCSA combined log format unless altered using `VARNISH_VARNISHNCSA_FORMAT`.
 
-##### VARNISH_VCL_CONF
-
-The Varnish VCL configuration file path, (or base64 encoded string of the configuration file contents), is set using `VARNISH_VCL_CONF`. The default configuration supplied is located at the path `/etc/varnish/docker-default.vcl`.
-
-##### VARNISH_TTL
-
-The `VARNISH_TTL` can be used to set a hard minimum time to live for cached documents. The default is 120 seconds.
-
 ##### VARNISH_MIN_THREADS, VARNISH_MAX_THREADS & VARNISH_THREAD_TIMEOUT
 
 Start at least `VARNISH_MIN_THREADS` but no more than `VARNISH_MAX_THREADS` worker threads with the `VARNISH_THREAD_TIMEOUT` idle timeout.
+
+##### VARNISH_OPTIONS
+
+Use `VARNISH_OPTIONS` to set other `varnishd` options.
 
 ##### VARNISH_STORAGE
 
 Use `VARNISH_STORAGE` to specify the storage backend. See the [varnishd documentation](https://varnish-cache.org/docs/6.0/reference/varnishd.html#storage-backend) for the types and parameters available. The default is a file type backend but it is recommended to use malloc if there is enough RAM available.
 
+##### VARNISH_TTL
+
+The `VARNISH_TTL` can be used to set a hard minimum time to live for cached documents. The default is 120 seconds.
+
 ##### VARNISH_VARNISHNCSA_FORMAT
 
 When `VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER` is set to `true` then `VARNISH_VARNISHNCSA_FORMAT` can be used to set the output log [format string](https://varnish-cache.org/docs/6.0/reference/varnishncsa.html#format).
+
+##### VARNISH_VARNISHNCSA_OPTIONS
+
+Use `VARNISH_VARNISHNCSA_OPTIONS` to set other `varnishncsa` options.
+
+##### VARNISH_VCL_CONF
+
+The Varnish VCL configuration file path, (or base64 encoded string of the configuration file contents), is set using `VARNISH_VCL_CONF`. The default configuration supplied is located at the path `/etc/varnish/docker-default.vcl`.
