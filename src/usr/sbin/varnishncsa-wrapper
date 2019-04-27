@@ -11,9 +11,12 @@ function __cleanup ()
 
 function __get_options ()
 {
-	#TODO getters with validation where possible.
-	local -r format="${1:-"${VARNISH_VARNISHNCSA_FORMAT:-"%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\""}"}"
-	local -r options="${2:-"${VARNISH_VARNISHNCSA_OPTIONS}"}"
+	local -r format="${1:-"$(
+		__get_varnish_varnishncsa_format
+	)"}"
+	local -r options="${2:-"$(
+		__get_varnish_varnishncsa_options
+	)"}"
 
 	printf -- \
 		'-a -c -P %s -F \"%s\"%s%s' \
@@ -48,18 +51,37 @@ function __get_timer_total ()
 	fi
 }
 
+function __get_varnish_varnishncsa_format ()
+{
+	local value="${VARNISH_VARNISHNCSA_FORMAT}"
+
+	if [[ -z ${value} ]]
+	then
+		value="%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\""
+	fi
+
+	printf -- '%s' "${value}"
+}
+
+function __get_varnish_varnishncsa_options ()
+{
+	local value="${VARNISH_VARNISHNCSA_OPTIONS}"
+
+	printf -- '%s' "${value}"
+}
+
 function main ()
 {
 	local -r bin="/usr/bin/varnishncsa"
 	local -r lock_file="/var/lock/subsys/varnish/varnishncsa-wrapper"
 	local -r nice="/bin/nice"
 	local -r niceness="10"
+	local -r prerequisite_autostart="${VARNISH_AUTOSTART_VARNISHD_WRAPPER:-true}"
+	local -r prerequisite_state_file="/var/lib/misc/varnishd-wrapper"
 	local -r state_file="/var/lib/misc/varnish/varnishncsa-wrapper"
 	local -r timer_start="$(
 		date +%s.%N
 	)"
-	local -r prerequisite_autostart="${VARNISH_AUTOSTART_VARNISHD_WRAPPER:-true}"
-	local -r prerequisite_state_file="/var/lib/misc/varnishd-wrapper"
 
 	local options
 	local timer_total
@@ -108,9 +130,12 @@ function main ()
 	if [[ ${verbose} == true ]] \
 		&& [[ ! -e ${state_file} ]]
 	then
-		#TODO getters with validation where possible.
-		varnish_varnishncsa_format="${VARNISH_VARNISHNCSA_FORMAT:-"%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\""}"
-		varnish_varnishncsa_options="${VARNISH_VARNISHNCSA_OPTIONS}"
+		varnish_varnishncsa_format="$(
+			__get_varnish_varnishncsa_format
+		)"
+		varnish_varnishncsa_options="$(
+			__get_varnish_varnishncsa_options
+		)"
 
 		options="$(
 			__get_options \
@@ -127,7 +152,7 @@ function main ()
 			<<-EOT
 
 			================================================================================
-			Varnish NCSA Details
+			Varnish (varnishncsa) Details
 			--------------------------------------------------------------------------------
 			format : ${varnish_varnishncsa_format}
 			varnishncsa options : ${varnish_varnishncsa_options}

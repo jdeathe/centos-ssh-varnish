@@ -11,13 +11,24 @@ function __cleanup ()
 
 function __get_options ()
 {
-	#TODO getters with validation where possible.
-	local -r max_threads="${5:-"${VARNISH_MAX_THREADS:-1000}"}"
-	local -r min_threads="${4:-"${VARNISH_MIN_THREADS:-50}"}"
-	local -r options="${7:-"${VARNISH_OPTIONS}"}"
-	local -r storage="${2:-"${VARNISH_STORAGE:-file,/var/lib/varnish/varnish_storage.bin,1G}"}"
-	local -r thread_timeout="${6:-"${VARNISH_THREAD_TIMEOUT:-120}"}"
-	local -r ttl="${3:-"${VARNISH_TTL:-120}"}"
+	local -r max_threads="${5:-"$(
+		__get_varnish_max_threads
+	)"}"
+	local -r min_threads="${4:-"$(
+		__get_varnish_min_threads
+	)"}"
+	local -r options="${7:-"$(
+		__get_varnish_options
+	)"}"
+	local -r storage="${2:-"$(
+		__get_varnish_options
+	)"}"
+	local -r thread_timeout="${6:-"$(
+		__get_varnish_thread_timeout
+	)"}"
+	local -r ttl="${3:-"$(
+		__get_varnish_ttl
+	)"}"
 	local -r vcl_path="${1:-"$(
 		__get_varnish_vcl_conf_path
 	)"}"
@@ -62,6 +73,48 @@ function __get_timer_total ()
 				timer_end - timer_start;
 			}'
 	fi
+}
+
+function __get_varnish_max_threads ()
+{
+	local value="${VARNISH_MAX_THREADS:-1000}"
+
+	printf -- '%s' ${value}
+}
+
+function __get_varnish_min_threads ()
+{
+	local value="${VARNISH_MIN_THREADS:-50}"
+
+	printf -- '%s' ${value}
+}
+
+function __get_varnish_options ()
+{
+	local value="${VARNISH_OPTIONS}"
+
+	printf -- '%s' ${value}
+}
+
+function __get_varnish_storage ()
+{
+	local value="${VARNISH_STORAGE:-file,/var/lib/varnish/varnish_storage.bin,1G}"
+
+	printf -- '%s' ${value}
+}
+
+function __get_varnish_thread_timeout ()
+{
+	local value="${VARNISH_THREAD_TIMEOUT:-120}"
+
+	printf -- '%s' ${value}
+}
+
+function __get_varnish_ttl ()
+{
+	local value="${VARNISH_TTL:-120}"
+
+	printf -- '%s' ${value}
 }
 
 function __get_varnish_vcl_conf_path ()
@@ -195,13 +248,24 @@ function main ()
 	if [[ ${verbose} == true ]] \
 		&& [[ ! -e ${state_file} ]]
 	then
-		#TODO getters with validation where possible.
-		varnish_max_threads="${VARNISH_MAX_THREADS:-1000}"
-		varnish_min_threads="${VARNISH_MIN_THREADS:-50}"
-		varnish_options="${VARNISH_OPTIONS}"
-		varnish_storage="${VARNISH_STORAGE:-file,/var/lib/varnish/varnish_storage.bin,1G}"
-		varnish_thread_timeout="${VARNISH_THREAD_TIMEOUT:-120}"
-		varnish_ttl="${VARNISH_TTL:-120}"
+		varnish_max_threads="$(
+			__get_varnish_max_threads
+		)"
+		varnish_min_threads="$(
+			__get_varnish_min_threads
+		)"
+		varnish_options="$(
+			__get_varnish_options
+		)"
+		varnish_storage="$(
+			__get_varnish_storage
+		)"
+		varnish_thread_timeout="$(
+			__get_varnish_thread_timeout
+		)"
+		varnish_ttl="$(
+			__get_varnish_ttl
+		)"
 		varnish_vcl_conf="$(
 			__get_varnish_vcl_conf_path
 		)"
@@ -229,7 +293,7 @@ function main ()
 			<<-EOT
 
 			================================================================================
-			Varnish Details
+			Varnish (varnishd) Details
 			--------------------------------------------------------------------------------
 			vcl : ${varnish_vcl_conf}
 			storage : ${varnish_storage}
