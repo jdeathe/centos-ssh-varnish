@@ -4,9 +4,11 @@ set -e
 
 function __cleanup ()
 {
-	local -r lock_file="${1}"
-
-	rm -f "${lock_file}"
+	if [[ -e "${1}" ]]
+	then
+		rm -f \
+			"${1}"
+	fi
 }
 
 function __get_options ()
@@ -327,7 +329,7 @@ function __set_varnish_vcl_conf ()
 		if [[ ! ${value} =~ ${pattern_plain_text} ]]
 		then
 			>&2 printf -- \
-				'ERROR: Invalid VCL File\n'
+				'ERROR: Invalid VCL\n'
 			exit 1
 		fi
 
@@ -335,6 +337,29 @@ function __set_varnish_vcl_conf ()
 			-- '%s' \
 			"${value}" \
 			> "${vcl_path}"
+	fi
+}
+
+function __test_varnish_vcl_conf ()
+{
+	local -r vcl_path="${1:-"$(
+		__get_varnish_vcl_conf_path
+	)"}"
+
+	local bin="${bin:-/usr/sbin/varnishd}"
+
+	if ! ${bin} -C -f ${vcl_path} &> /dev/null
+	then
+		# Display the error details
+		set +e
+		${bin} \
+			-C \
+			-f ${vcl_path}
+		set -e
+
+		>&2 printf -- \
+			'ERROR: Invalid VCL\n'
+		exit 1
 	fi
 }
 
@@ -414,6 +439,8 @@ function main ()
 
 		__populate_psk_secret_file
 		__set_varnish_vcl_conf
+		__test_varnish_vcl_conf \
+			"${varnish_vcl_conf}"
 
 		options="$(
 			__get_options \

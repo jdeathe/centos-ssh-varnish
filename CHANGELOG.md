@@ -26,6 +26,7 @@ CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.1.
 - Adds improved `healtchcheck`, `varnishd-wrapper` and `varnishncsa-wrapper` scripts.
 - Adds improved lock/state file implementation in wrapper scripts.
 - Adds `VARNISH_OPTIONS` and `VARNISH_VARNISHNCSA_OPTIONS`.
+- Adds improved VCL error checking/handling.
 - Removes use of `/etc/services-config` paths.
 - Removes the unused group element from the default container name.
 - Removes the node element from the default container name.
