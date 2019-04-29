@@ -4,10 +4,25 @@ set -e
 
 function __cleanup ()
 {
-	if [[ -e "${1}" ]]
+	if [[ -e ${lock_file} ]]
 	then
-		rm -f \
-			"${1}"
+		rm -f "${lock_file}"
+	fi
+}
+
+function __create_lock ()
+{
+	if [[ -n ${lock_file} ]]
+	then
+		touch "${lock_file}"
+	fi
+}
+
+function __create_state ()
+{
+	if [[ -n ${state_file} ]]
+	then
+		touch "${state_file}"
 	fi
 }
 
@@ -404,13 +419,9 @@ function main ()
 		exit 1
 	fi
 
-	trap \
-		"__cleanup \"${lock_file}\"" \
+	trap "__cleanup" \
 		INT TERM EXIT
-
-	# Create lock
-	touch \
-		"${lock_file}"
+	__create_lock
 
 	if [[ ${verbose} == true ]] \
 		&& [[ ! -e ${state_file} ]]
@@ -481,12 +492,8 @@ function main ()
 		)"
 	fi
 
-	touch \
-		"${state_file}"
-
-	__cleanup \
-		"${lock_file}"
-
+	__create_state
+	__cleanup
 	trap - \
 		INT TERM EXIT
 
