@@ -12,6 +12,8 @@ CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.1.
 - Updates source image to [2.5.1](https://github.com/jdeathe/centos-ssh/releases/tag/2.5.1).
 - Updates and restructures Dockerfile.
 - Updates container naming conventions and readability of `Makefile`.
+- Updates startup time to 3 seconds.
+- Updates healthcheck retries to 4.
 - Fixes issue with unexpected published port in run templates when `DOCKER_PORT_MAP_TCP_80` or `DOCKER_PORT_MAP_TCP_8443` is set to an empty string or 0.
 - Fixes binary paths in systemd unit files for compatibility with both EL and Ubuntu hosts.
 - Adds consideration for event lag into test cases for unhealthy health_status events.
