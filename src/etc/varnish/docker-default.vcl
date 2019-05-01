@@ -53,11 +53,6 @@ sub vcl_init {
 # Client side
 # ------------------------------------------------------------------------------
 sub vcl_recv {
-	# if (req.method == "PRI") {
-	# 	# Reject invalid method
-	# 	return (synth(405));
-	# }
-
 	set req.http.X-Cookie = req.http.Cookie;
 	unset req.http.Cookie;
 	unset req.http.Forwarded;
@@ -85,31 +80,6 @@ sub vcl_recv {
 		# Cap grace period for healthy backends
 		set req.grace = 15s;
 	}
-
-	# if ( ! req.method ~ "^(GET|HEAD|PUT|POST|TRACE|OPTIONS|DELETE|PATCH)$") {
-	# 	# Non-RFC2616 or CONNECT
-	# 	return (pipe);
-	# }
-
-	# if ( ! req.method ~ "^(GET|HEAD)$") {
-	# 	# Only deal with GET and HEAD
-	# 	return (pass);
-	# }
-
-	# if (req.http.Expect) {
-	# 	# Handle Expect request
-	# 	return (pipe);
-	# }
-
-	# if (req.http.Cache-Control ~ "^(?i:private|no-cache|no-store)$") {
-	# 	# Handle Cache-Control
-	# 	return (pass);
-	# }
-
-	# if (req.http.Authorization || req.http.Cookie) {
-	# 	# Not cacheable by default
-	# 	return (pass);
-	# }
 }
 
 sub vcl_hash {
