@@ -22,14 +22,21 @@ probe healthcheck {
 }
 
 # ------------------------------------------------------------------------------
-# HTTP Backends
+# Backends
 # ------------------------------------------------------------------------------
-backend http_1 { .host = "httpd_1"; .port = "80"; .first_byte_timeout = 300s; .probe = healthcheck; }
+backend http_1 {
+	.host = "httpd_1";
+	.port = "80";
+	.first_byte_timeout = 300s;
+	.probe = healthcheck;
+}
 
-# ------------------------------------------------------------------------------
-# PROXY (HTTPS Terminated) Backends
-# ------------------------------------------------------------------------------
-backend proxy_1 { .host = "httpd_1"; .port = "8443"; .first_byte_timeout = 300s; .probe = healthcheck; }
+backend proxy_1 {
+	.host = "httpd_1";
+	.port = "8443";
+	.first_byte_timeout = 300s;
+	.probe = healthcheck;
+}
 
 # ------------------------------------------------------------------------------
 # Directors
@@ -46,69 +53,70 @@ sub vcl_init {
 # Client side
 # ------------------------------------------------------------------------------
 sub vcl_recv {
-	if (req.method == "PRI") {
-		# Reject SPDY or HTTP/2.0 with Method Not Allowed
-		return (synth(405));
-	}
+	# if (req.method == "PRI") {
+	# 	# Reject invalid method
+	# 	return (synth(405));
+	# }
 
-	unset req.http.Proxy;
+	set req.http.X-Cookie = req.http.Cookie;
+	unset req.http.Cookie;
 	unset req.http.Forwarded;
+	unset req.http.Proxy;
 	unset req.http.X-Forwarded-Port;
 	unset req.http.X-Forwarded-Proto;
 
 	if (std.port(server.ip) == 8443 ||
 		std.port(local.ip) == 8443) {
-		# SSL Terminated upstream so indcate this with a custom header
+		# Port 8443
 		set req.http.X-Forwarded-Port = "443";
 		set req.http.X-Forwarded-Proto = "https";
 		set req.backend_hint = director_proxy.backend();
 	} else if (std.port(server.ip) == 80 ||
 		std.port(local.ip) == 80) {
-		# Default to HTTP
+		# Port 80
 		set req.http.X-Forwarded-Port = "80";
 		set req.backend_hint = director_http.backend();
 	} else {
+		# Reject unexpected ports
 		return (synth(403));
 	}
 
-	# set req.http.X-Varnish-Grace = "none";
-
-	if (req.method != "GET" &&
-		req.method != "HEAD" &&
-		req.method != "PUT" &&
-		req.method != "POST" &&
-		req.method != "TRACE" &&
-		req.method != "OPTIONS" &&
-		req.method != "DELETE") {
-		# Non-RFC2616 or CONNECT which is weird.
-		return (pipe);
+	if (std.healthy(req.backend_hint)) {
+		# Cap grace period for healthy backends
+		set req.grace = 15s;
 	}
 
-	if (req.method != "GET" &&
-		req.method != "HEAD") {
-		# Only deal with GET and HEAD by default
-		return (pass);
-	}
+	# if ( ! req.method ~ "^(GET|HEAD|PUT|POST|TRACE|OPTIONS|DELETE|PATCH)$") {
+	# 	# Non-RFC2616 or CONNECT
+	# 	return (pipe);
+	# }
 
-	# Handle Expect request
-	if (req.http.Expect) {
-		return (pipe);
-	}
+	# if ( ! req.method ~ "^(GET|HEAD)$") {
+	# 	# Only deal with GET and HEAD
+	# 	return (pass);
+	# }
 
-	# Cache-Control
-	if (req.http.Cache-Control ~ "(private|no-cache|no-store)") {
-		return (pass);
-	}
+	# if (req.http.Expect) {
+	# 	# Handle Expect request
+	# 	return (pipe);
+	# }
 
-	set req.http.X-Cookie = req.http.Cookie;
-	unset req.http.Cookie;
+	# if (req.http.Cache-Control ~ "^(?i:private|no-cache|no-store)$") {
+	# 	# Handle Cache-Control
+	# 	return (pass);
+	# }
+
+	# if (req.http.Authorization || req.http.Cookie) {
+	# 	# Not cacheable by default
+	# 	return (pass);
+	# }
 }
 
 sub vcl_hash {
 	hash_data(req.url);
 
-	if (req.http.host) {
-		hash_data(req.http.host);
+	if (req.http.Host) {
+		hash_data(req.http.Host);
 	} else {
 		hash_data(server.ip);
 	}
@@ -126,46 +134,30 @@ sub vcl_hash {
 }
 
 sub vcl_hit {
-	if (obj.ttl >= 0s) {
-		return (deliver);
-	}
-
-	if (std.healthy(req.backend_hint) &&
-		obj.ttl + 15s > 0s) {
-		# set req.http.X-Varnish-Grace = "normal";
-		return (deliver);
-	} else if (obj.ttl + obj.grace > 0s) {
-		# set req.http.X-Varnish-Grace = "full";
-		return (deliver);
-	}
-
-	return (miss);
+	return (deliver);
 }
 
 sub vcl_deliver {
-	# set resp.http.X-Varnish-Grace = req.http.X-Varnish-Grace;
 	unset resp.http.Via;
-
-	return (deliver);
 }
 
 # ------------------------------------------------------------------------------
 # Backend
 # ------------------------------------------------------------------------------
 sub vcl_backend_response {
-	# Keep objects beyond their ttl
-	set beresp.grace = 6h;
+	set beresp.grace = 24h;
 
-	if (beresp.ttl <= 0s ||
-		beresp.http.Set-Cookie ||
-		beresp.http.Surrogate-control ~ "no-store" ||
-		( ! beresp.http.Surrogate-Control &&
-			beresp.http.Cache-Control ~ "(private|no-cache|no-store)") ||
-		beresp.http.Vary == "*") {
-		# Mark as "Hit-For-Pass" for the next 2 minutes
-		set beresp.uncacheable = true;
-		set beresp.ttl = 120s;
+	if (bereq.uncacheable) {
 		return (deliver);
+	} else if (beresp.ttl <= 0s ||
+		beresp.http.Set-Cookie ||
+		beresp.http.Surrogate-Control ~ "^(?i)no-store$" ||
+		( ! beresp.http.Surrogate-Control &&
+			beresp.http.Cache-Control ~ "^(?i:private|no-cache|no-store)$") ||
+		beresp.http.Vary == "*") {
+		# Mark as "hit-for-miss" for 2 minutes
+		set beresp.ttl = 120s;
+		set beresp.uncacheable = true;
 	}
 
 	return (deliver);

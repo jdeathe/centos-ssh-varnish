@@ -22,14 +22,21 @@ probe healthcheck {
 }
 
 # ------------------------------------------------------------------------------
-# HTTP Backends
+# Backends
 # ------------------------------------------------------------------------------
-backend http_1 { .host = "httpd_1"; .port = "80"; .first_byte_timeout = 300s; .probe = healthcheck; }
+backend http_1 {
+	.host = "httpd_1";
+	.port = "80";
+	.first_byte_timeout = 300s;
+	.probe = healthcheck;
+}
 
-# ------------------------------------------------------------------------------
-# HTTP (HTTPS Terminated) Backends
-# ------------------------------------------------------------------------------
-backend proxy_1 { .host = "httpd_1"; .port = "8443"; .first_byte_timeout = 300s; .probe = healthcheck; }
+backend proxy_1 {
+	.host = "httpd_1";
+	.port = "8443";
+	.first_byte_timeout = 300s;
+	.probe = healthcheck;
+}
 
 # ------------------------------------------------------------------------------
 # Directors
@@ -46,68 +53,40 @@ sub vcl_init {
 # Client side
 # ------------------------------------------------------------------------------
 sub vcl_recv {
-	if (req.method == "PRI") {
-		# Reject SPDY or HTTP/2.0 with Method Not Allowed
-		return (synth(405));
-	}
-
+	set req.http.X-Cookie = req.http.Cookie;
+	unset req.http.Cookie;
 	unset req.http.Forwarded;
+	unset req.http.Proxy;
 	unset req.http.X-Forwarded-Port;
 	unset req.http.X-Forwarded-Proto;
 
 	if (std.port(server.ip) == 8443 ||
 		std.port(local.ip) == 8443) {
-		# SSL Terminated upstream so indcate this with a custom header
+		# Port 8443
 		set req.http.X-Forwarded-Port = "443";
 		set req.http.X-Forwarded-Proto = "https";
 		set req.backend_hint = director_proxy.backend();
 	} else if (std.port(server.ip) == 80 ||
 		std.port(local.ip) == 80) {
-		# Default to HTTP
+		# Port 80
 		set req.http.X-Forwarded-Port = "80";
 		set req.backend_hint = director_http.backend();
 	} else {
+		# Reject unexpected ports
 		return (synth(403));
 	}
 
-	# set req.http.X-Varnish-Grace = "none";
-
-	if (req.method != "GET" &&
-		req.method != "HEAD" &&
-		req.method != "PUT" &&
-		req.method != "POST" &&
-		req.method != "TRACE" &&
-		req.method != "OPTIONS" &&
-		req.method != "DELETE") {
-		# Non-RFC2616 or CONNECT which is weird.
-		return (pipe);
+	if (std.healthy(req.backend_hint)) {
+		# Cap grace period for healthy backends
+		set req.grace = 15s;
 	}
-
-	if (req.method != "GET" &&
-		req.method != "HEAD") {
-		# Only deal with GET and HEAD by default
-		return (pass);
-	}
-
-	# Handle Expect request
-	if (req.http.Expect) {
-		return (pipe);
-	}
-
-	# Cache-Control
-	if (req.http.Cache-Control ~ "(private|no-cache|no-store)") {
-		return (pass);
-	}
-
-	set req.http.X-Cookie = req.http.Cookie;
-	unset req.http.Cookie;
 }
 
 sub vcl_hash {
 	hash_data(req.url);
 
-	if (req.http.host) {
-		hash_data(req.http.host);
+	if (req.http.Host) {
+		hash_data(req.http.Host);
 	} else {
 		hash_data(server.ip);
 	}
@@ -125,48 +104,49 @@ sub vcl_hash {
 }
 
 sub vcl_hit {
-	if (obj.ttl >= 0s) {
-		return (deliver);
-	}
-
-	if (std.healthy(req.backend_hint) &&
-		obj.ttl + 15s > 0s) {
-		# set req.http.X-Varnish-Grace = "normal";
-		return (deliver);
-	} else if (obj.ttl + obj.grace > 0s) {
-		# set req.http.X-Varnish-Grace = "full";
-		return (deliver);
-	}
-
-	return (miss);
-}
-
-sub vcl_deliver {
-	# set resp.http.X-Varnish-Grace = req.http.X-Varnish-Grace;
-
 	return (deliver);
 }
 
-# Errors: 413, 417 & 503
+sub vcl_deliver {
+	unset resp.http.Via;
+
+	if (resp.status >= 400) {
+		return (synth(resp.status));
+	}
+}
+
 sub vcl_synth {
-	set resp.http.Content-Type = "text/html; charset=utf-8";
 	set resp.http.Retry-After = "5";
-	synthetic( {"<!DOCTYPE html>
+	set resp.http.X-Frame-Options = "DENY";
+	set resp.http.X-XSS-Protection = "1; mode=block";
+
+	if (req.url ~ "\.(?i:css|eot|gif|ico|jpe?g|js|png|svg|ttf|txt|woff2?)") {
+		# Respond with simple text error for static assets.
+		set resp.http.Content-Type = "text/plain; charset=utf-8";
+		synthetic(resp.status + " " + resp.reason);
+	} else if (req.url ~ "(?i)/status(\.php)?$") {
+		set resp.http.Cache-Control = "no-cache";
+		set resp.http.Content-Type = "text/plain; charset=utf-8";
+		synthetic(resp.reason);
+	} else {
+		set resp.http.Content-Type = "text/html; charset=utf-8";
+		synthetic({"<!DOCTYPE html>
 <html>
 	<head>
 		<title>Error</title>
 		<style>
-			body{font-family:sans-serif;color:#666;background-color:#f1f1f1;margin:12%;max-width:50%;}
-			h1{color:#333;font-size:1.5em;font-weight:400;text-transform:uppercase;}
+			body{color:#666;background-color:#f1f1f1;font-family:sans-serif;margin:12%;max-width:50%;}
+			h1{color:#333;font-size:4rem;font-weight:400;text-transform:uppercase;}
+			p{font-size:1.5rem;}
 		</style>
 	</head>
 	<body>
-		<h1>"} + resp.status + " " + resp.reason + {"</h1>
+		<h1>"} + resp.status + {"</h1>
 		<p>"} + resp.reason + {"</p>
-		<p>XID: "} + req.xid + {"</p>
 	</body>
-</html>
-"} );
+</html>"});
+	}
+
 	return (deliver);
 }
 
@@ -174,42 +154,57 @@ sub vcl_synth {
 # Backend
 # ------------------------------------------------------------------------------
 sub vcl_backend_response {
-	# Keep objects beyond their ttl
-	set beresp.grace = 6h;
+	set beresp.grace = 24h;
 
-	if (beresp.ttl <= 0s ||
-		beresp.http.Set-Cookie ||
-		beresp.http.Surrogate-control ~ "no-store" ||
-		( ! beresp.http.Surrogate-Control &&
-			beresp.http.Cache-Control ~ "(private|no-cache|no-store)") ||
-		beresp.http.Vary == "*") {
-		# Mark as "Hit-For-Pass" for the next 2 minutes
-		set beresp.uncacheable = true;
-		set beresp.ttl = 120s;
+	if (bereq.uncacheable) {
 		return (deliver);
+	} else if (beresp.ttl <= 0s ||
+		beresp.http.Set-Cookie ||
+		beresp.http.Surrogate-Control ~ "^(?i)no-store$" ||
+		( ! beresp.http.Surrogate-Control &&
+			beresp.http.Cache-Control ~ "^(?i:private|no-cache|no-store)$") ||
+		beresp.http.Vary == "*") {
+		# Mark as "hit-for-miss" for 2 minutes
+		set beresp.ttl = 120s;
+		set beresp.uncacheable = true;
 	}
 
 	return (deliver);
 }
 
 sub vcl_backend_error {
-	set beresp.http.Content-Type = "text/html; charset=utf-8";
 	set beresp.http.Retry-After = "5";
-	synthetic( {"<!DOCTYPE html>
+	set beresp.http.X-Frame-Options = "DENY";
+	set beresp.http.X-XSS-Protection = "1; mode=block";
+
+	if (bereq.url ~ "\.(?i:css|eot|gif|ico|jpe?g|js|png|svg|ttf|txt|woff2?)") {
+		# Respond with simple text error for static assets.
+		set beresp.http.Content-Type = "text/plain; charset=utf-8";
+		synthetic(beresp.status + " " + beresp.reason + {"
+XID: "} + bereq.xid);
+	} else if (bereq.url ~ "(?i)/status(\.php)?$") {
+		set beresp.http.Cache-Control = "no-cache";
+		set beresp.http.Content-Type = "text/plain; charset=utf-8";
+		synthetic(beresp.reason);
+	} else {
+		set beresp.http.Content-Type = "text/html; charset=utf-8";
+		synthetic({"<!DOCTYPE html>
 <html>
-	<style>
-		body{font-family:sans-serif;color:#666;background-color:#f1f1f1;margin:12%;max-width:50%;}
-		h1{color:#333;font-size:1.5em;font-weight:400;text-transform:uppercase;}
-	</style>
 	<head>
 		<title>Error</title>
+		<style>
+			body{color:#666;background-color:#f1f1f1;font-family:sans-serif;margin:12%;max-width:50%;}
+			h1{color:#333;font-size:4rem;font-weight:400;text-transform:uppercase;}
+			p{font-size:1.5rem;}
+		</style>
 	</head>
 	<body>
-		<h1>"} + beresp.status + " " + beresp.reason + {"</h1>
+		<h1>"} + beresp.status + {"</h1>
 		<p>"} + beresp.reason + {"</p>
 		<p>XID: "} + bereq.xid + {"</p>
 	</body>
-</html>
-"} );
+</html>"});
+	}
+
 	return (deliver);
 }
