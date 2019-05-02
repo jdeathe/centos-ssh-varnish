@@ -53,7 +53,9 @@ sub vcl_init {
 # Client side
 # ------------------------------------------------------------------------------
 sub vcl_recv {
-	set req.http.X-Cookie = req.http.Cookie;
+	if (req.http.Cookie != "") {
+		set req.http.X-Cookie = req.http.Cookie;
+	}
 	unset req.http.Cookie;
 	unset req.http.Forwarded;
 	unset req.http.Proxy;
@@ -97,8 +99,8 @@ sub vcl_hash {
 
 	if (req.http.X-Cookie) {
 		set req.http.Cookie = req.http.X-Cookie;
-		unset req.http.X-Cookie;
 	}
+	unset req.http.X-Cookie;
 
 	return (lookup);
 }
@@ -116,35 +118,55 @@ sub vcl_deliver {
 }
 
 sub vcl_synth {
+	set resp.http.Content-Type = "text/html; charset=utf-8";
 	set resp.http.Retry-After = "5";
 	set resp.http.X-Frame-Options = "DENY";
 	set resp.http.X-XSS-Protection = "1; mode=block";
 
-	if (req.url ~ "\.(?i:css|eot|gif|ico|jpe?g|js|png|svg|ttf|txt|woff2?)") {
+	if (req.url ~ "(?i)\.(css|eot|gif|ico|jpe?g|js|png|svg|ttf|txt|woff2?)(\?.*)?$") {
 		# Respond with simple text error for static assets.
+		set resp.body = resp.status + " " + resp.reason;
 		set resp.http.Content-Type = "text/plain; charset=utf-8";
-		synthetic(resp.status + " " + resp.reason);
-	} else if (req.url ~ "(?i)/status(\.php)?$") {
-		set resp.http.Cache-Control = "no-cache";
+	} else if (req.url ~ "(?i)^/status\.php(\?.*)?$") {
+		# Respond with simple text error for status uri.
+		set resp.body = resp.reason;
+		set resp.http.Cache-Control = "no-store";
 		set resp.http.Content-Type = "text/plain; charset=utf-8";
-		synthetic(resp.reason);
-	} else {
-		set resp.http.Content-Type = "text/html; charset=utf-8";
-		synthetic({"<!DOCTYPE html>
+	} else if (resp.status < 500) {
+		set resp.body = {"<!DOCTYPE html>
 <html>
 	<head>
-		<title>Error</title>
+		<title>"} + resp.reason + {"</title>
 		<style>
 			body{color:#666;background-color:#f1f1f1;font-family:sans-serif;margin:12%;max-width:50%;}
-			h1{color:#333;font-size:4rem;font-weight:400;text-transform:uppercase;}
+			h1,h2{color:#333;font-size:4rem;font-weight:400;text-transform:uppercase;}
+			h2{color:#333;font-size:2rem;}
 			p{font-size:1.5rem;}
 		</style>
 	</head>
 	<body>
 		<h1>"} + resp.status + {"</h1>
-		<p>"} + resp.reason + {"</p>
+		<h2>"} + resp.reason + {"</h2>
 	</body>
-</html>"});
+</html>"};
+	} else {
+		set resp.body = {"<!DOCTYPE html>
+<html>
+	<head>
+		<title>"} + resp.reason + {"</title>
+		<style>
+			body{color:#666;background-color:#f1f1f1;font-family:sans-serif;margin:12%;max-width:50%;}
+			h1,h2{color:#333;font-size:4rem;font-weight:400;text-transform:uppercase;}
+			h2{color:#333;font-size:2rem;}
+			p{font-size:1.5rem;}
+		</style>
+	</head>
+	<body>
+		<h1>"} + resp.status + {"</h1>
+		<h2>"} + resp.reason + {"</h2>
+		<p>XID: "} + req.xid + {"</p>
+	</body>
+</html>"};
 	}
 
 	return (deliver);
@@ -160,9 +182,9 @@ sub vcl_backend_response {
 		return (deliver);
 	} else if (beresp.ttl <= 0s ||
 		beresp.http.Set-Cookie ||
-		beresp.http.Surrogate-Control ~ "^(?i)no-store$" ||
+		beresp.http.Surrogate-Control ~ "(?i)^no-store$" ||
 		( ! beresp.http.Surrogate-Control &&
-			beresp.http.Cache-Control ~ "^(?i:private|no-cache|no-store)$") ||
+			beresp.http.Cache-Control ~ "(?i)^(private|no-cache|no-store)$") ||
 		beresp.http.Vary == "*") {
 		# Mark as "hit-for-miss" for 2 minutes
 		set beresp.ttl = 120s;
@@ -173,37 +195,38 @@ sub vcl_backend_response {
 }
 
 sub vcl_backend_error {
+	set beresp.http.Content-Type = "text/html; charset=utf-8";
 	set beresp.http.Retry-After = "5";
 	set beresp.http.X-Frame-Options = "DENY";
 	set beresp.http.X-XSS-Protection = "1; mode=block";
 
-	if (bereq.url ~ "\.(?i:css|eot|gif|ico|jpe?g|js|png|svg|ttf|txt|woff2?)") {
+	if (bereq.url ~ "(?i)\.(css|eot|gif|ico|jpe?g|js|png|svg|ttf|txt|woff2?)(\?.*)?$") {
 		# Respond with simple text error for static assets.
+		set beresp.body = beresp.status + " " + beresp.reason;
 		set beresp.http.Content-Type = "text/plain; charset=utf-8";
-		synthetic(beresp.status + " " + beresp.reason + {"
-XID: "} + bereq.xid);
-	} else if (bereq.url ~ "(?i)/status(\.php)?$") {
-		set beresp.http.Cache-Control = "no-cache";
+	} else if (bereq.url ~ "(?i)^/status\.php(\?.*)?$") {
+		# Respond with simple text error for status uri.
+		set beresp.body = beresp.reason;
+		set beresp.http.Cache-Control = "no-store";
 		set beresp.http.Content-Type = "text/plain; charset=utf-8";
-		synthetic(beresp.reason);
 	} else {
-		set beresp.http.Content-Type = "text/html; charset=utf-8";
-		synthetic({"<!DOCTYPE html>
+		set beresp.body = {"<!DOCTYPE html>
 <html>
 	<head>
-		<title>Error</title>
+		<title>"} + beresp.reason + {"</title>
 		<style>
 			body{color:#666;background-color:#f1f1f1;font-family:sans-serif;margin:12%;max-width:50%;}
-			h1{color:#333;font-size:4rem;font-weight:400;text-transform:uppercase;}
+			h1,h2{color:#333;font-size:4rem;font-weight:400;text-transform:uppercase;}
+			h2{color:#333;font-size:2rem;}
 			p{font-size:1.5rem;}
 		</style>
 	</head>
 	<body>
 		<h1>"} + beresp.status + {"</h1>
-		<p>"} + beresp.reason + {"</p>
+		<h2>"} + beresp.reason + {"</h2>
 		<p>XID: "} + bereq.xid + {"</p>
 	</body>
-</html>"});
+</html>"};
 	}
 
 	return (deliver);

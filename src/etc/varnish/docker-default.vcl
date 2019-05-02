@@ -53,7 +53,9 @@ sub vcl_init {
 # Client side
 # ------------------------------------------------------------------------------
 sub vcl_recv {
-	set req.http.X-Cookie = req.http.Cookie;
+	if (req.http.Cookie != "") {
+		set req.http.X-Cookie = req.http.Cookie;
+	}
 	unset req.http.Cookie;
 	unset req.http.Forwarded;
 	unset req.http.Proxy;
@@ -97,8 +99,8 @@ sub vcl_hash {
 
 	if (req.http.X-Cookie) {
 		set req.http.Cookie = req.http.X-Cookie;
-		unset req.http.X-Cookie;
 	}
+	unset req.http.X-Cookie;
 
 	return (lookup);
 }
@@ -121,9 +123,9 @@ sub vcl_backend_response {
 		return (deliver);
 	} else if (beresp.ttl <= 0s ||
 		beresp.http.Set-Cookie ||
-		beresp.http.Surrogate-Control ~ "^(?i)no-store$" ||
+		beresp.http.Surrogate-Control ~ "(?i)^no-store$" ||
 		( ! beresp.http.Surrogate-Control &&
-			beresp.http.Cache-Control ~ "^(?i:private|no-cache|no-store)$") ||
+			beresp.http.Cache-Control ~ "(?i)^(private|no-cache|no-store)$") ||
 		beresp.http.Vary == "*") {
 		# Mark as "hit-for-miss" for 2 minutes
 		set beresp.ttl = 120s;
