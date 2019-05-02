@@ -113,6 +113,61 @@ sub vcl_deliver {
 	unset resp.http.Via;
 }
 
+sub vcl_synth {
+	set resp.http.Content-Type = "text/html; charset=utf-8";
+	set resp.http.Retry-After = "5";
+	set resp.http.X-Frame-Options = "DENY";
+	set resp.http.X-XSS-Protection = "1; mode=block";
+
+	if (req.url ~ "(?i)\.(css|eot|gif|ico|jpe?g|js|png|svg|ttf|txt|woff2?)(\?.*)?$") {
+		# Respond with simple text error for static assets.
+		set resp.body = resp.status + " " + resp.reason;
+		set resp.http.Content-Type = "text/plain; charset=utf-8";
+	} else if (req.url ~ "(?i)^/status\.php(\?.*)?$") {
+		# Respond with simple text error for status uri.
+		set resp.body = resp.reason;
+		set resp.http.Cache-Control = "no-store";
+		set resp.http.Content-Type = "text/plain; charset=utf-8";
+	} else if (resp.status < 500) {
+		set resp.body = {"<!DOCTYPE html>
+<html>
+	<head>
+		<title>"} + resp.reason + {"</title>
+		<style>
+			body{color:#666;background-color:#f1f1f1;font-family:sans-serif;margin:12%;max-width:50%;}
+			h1,h2{color:#333;font-size:4rem;font-weight:400;text-transform:uppercase;}
+			h2{color:#333;font-size:2rem;}
+			p{font-size:1.5rem;}
+		</style>
+	</head>
+	<body>
+		<h1>"} + resp.status + {"</h1>
+		<h2>"} + resp.reason + {"</h2>
+	</body>
+</html>"};
+	} else {
+		set resp.body = {"<!DOCTYPE html>
+<html>
+	<head>
+		<title>"} + resp.reason + {"</title>
+		<style>
+			body{color:#666;background-color:#f1f1f1;font-family:sans-serif;margin:12%;max-width:50%;}
+			h1,h2{color:#333;font-size:4rem;font-weight:400;text-transform:uppercase;}
+			h2{color:#333;font-size:2rem;}
+			p{font-size:1.5rem;}
+		</style>
+	</head>
+	<body>
+		<h1>"} + resp.status + {"</h1>
+		<h2>"} + resp.reason + {"</h2>
+		<p>XID: "} + req.xid + {"</p>
+	</body>
+</html>"};
+	}
+
+	return (deliver);
+}
+
 # ------------------------------------------------------------------------------
 # Backend
 # ------------------------------------------------------------------------------
@@ -130,6 +185,44 @@ sub vcl_backend_response {
 		# Mark as "hit-for-miss" for 2 minutes
 		set beresp.ttl = 120s;
 		set beresp.uncacheable = true;
+	}
+
+	return (deliver);
+}
+
+sub vcl_backend_error {
+	set beresp.http.Content-Type = "text/html; charset=utf-8";
+	set beresp.http.Retry-After = "5";
+	set beresp.http.X-Frame-Options = "DENY";
+	set beresp.http.X-XSS-Protection = "1; mode=block";
+
+	if (bereq.url ~ "(?i)\.(css|eot|gif|ico|jpe?g|js|png|svg|ttf|txt|woff2?)(\?.*)?$") {
+		# Respond with simple text error for static assets.
+		set beresp.body = beresp.status + " " + beresp.reason;
+		set beresp.http.Content-Type = "text/plain; charset=utf-8";
+	} else if (bereq.url ~ "(?i)^/status\.php(\?.*)?$") {
+		# Respond with simple text error for status uri.
+		set beresp.body = beresp.reason;
+		set beresp.http.Cache-Control = "no-store";
+		set beresp.http.Content-Type = "text/plain; charset=utf-8";
+	} else {
+		set beresp.body = {"<!DOCTYPE html>
+<html>
+	<head>
+		<title>"} + beresp.reason + {"</title>
+		<style>
+			body{color:#666;background-color:#f1f1f1;font-family:sans-serif;margin:12%;max-width:50%;}
+			h1,h2{color:#333;font-size:4rem;font-weight:400;text-transform:uppercase;}
+			h2{color:#333;font-size:2rem;}
+			p{font-size:1.5rem;}
+		</style>
+	</head>
+	<body>
+		<h1>"} + beresp.status + {"</h1>
+		<h2>"} + beresp.reason + {"</h2>
+		<p>XID: "} + bereq.xid + {"</p>
+	</body>
+</html>"};
 	}
 
 	return (deliver);
