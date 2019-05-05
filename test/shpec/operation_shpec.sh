@@ -1,16 +1,15 @@
-readonly STARTUP_TIME=2
+readonly STARTUP_TIME=3
 readonly TEST_DIRECTORY="test"
 
 # These should ideally be a static value but hosts might be using this port so 
 # need to allow for alternatives.
-DOCKER_PORT_MAP_TCP_22="${DOCKER_PORT_MAP_TCP_22:-NULL}"
 DOCKER_PORT_MAP_TCP_80="${DOCKER_PORT_MAP_TCP_80:-8000}"
 DOCKER_PORT_MAP_TCP_8443="${DOCKER_PORT_MAP_TCP_8443:-8443}"
 
 function __destroy ()
 {
 	local -r backend_alias="httpd_1"
-	local -r backend_name="apache-php.pool-1.1.1"
+	local -r backend_name="apache-php.1"
 	local -r backend_network="bridge_t1"
 
 	# Destroy the backend container
@@ -24,6 +23,9 @@ function __destroy ()
 			${backend_network} \
 		&> /dev/null
 	fi
+
+	# Truncate cookie-jar
+	:> ~/.curl_cookies
 }
 
 function __get_container_port ()
@@ -84,7 +86,7 @@ function __is_container_ready ()
 function __setup ()
 {
 	local -r backend_alias="httpd_1"
-	local -r backend_name="apache-php.pool-1.1.1"
+	local -r backend_name="apache-php.1"
 	local -r backend_network="bridge_t1"
 	local -r backend_release="3.1.1"
 
@@ -154,13 +156,14 @@ function __terminate_container ()
 
 function test_basic_operations ()
 {
-	local -r varnish_vcl_source_path="src/etc/services-config/varnish/docker-default.vcl"
+	local -r varnish_vcl_source_path="src/etc/varnish/docker-default.vcl"
 	local -r backend_hostname="localhost.localdomain"
-	local -r backend_name="apache-php.pool-1.1.1"
+	local -r backend_name="apache-php.1"
 	local -r backend_network="bridge_t1"
 	local container_port_80=""
 	local container_port_8443=""
 	local header_x_varnish=""
+	local phpsessid=""
 	local request_headers=""
 	local request_response=""
 	local varnish_logs=""
@@ -168,7 +171,7 @@ function test_basic_operations ()
 	local varnish_vcl_loaded_hash=""
 	local varnish_vcl_source_hash=""
 
-	trap "__terminate_container varnish.pool-1.1.1 &> /dev/null; \
+	trap "__terminate_container varnish.1 &> /dev/null; \
 		__destroy; \
 		exit 1" \
 		INT TERM EXIT
@@ -176,13 +179,13 @@ function test_basic_operations ()
 	describe "Basic Varnish operations"
 		describe "Runs named container"
 			__terminate_container \
-				varnish.pool-1.1.1 \
+				varnish.1 \
 			&> /dev/null
 
 			it "Can publish ${DOCKER_PORT_MAP_TCP_80}:80."
 				docker run \
 					--detach \
-					--name varnish.pool-1.1.1 \
+					--name varnish.1 \
 					--network ${backend_network} \
 					--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
 					--publish ${DOCKER_PORT_MAP_TCP_8443}:8443 \
@@ -191,7 +194,7 @@ function test_basic_operations ()
 
 				container_port_80="$(
 					__get_container_port \
-						varnish.pool-1.1.1 \
+						varnish.1 \
 						80/tcp
 				)"
 
@@ -210,7 +213,7 @@ function test_basic_operations ()
 			it "Can publish ${DOCKER_PORT_MAP_TCP_8443}:8443."
 				container_port_8443="$(
 					__get_container_port \
-						varnish.pool-1.1.1 \
+						varnish.1 \
 						8443/tcp
 				)"
 
@@ -228,7 +231,7 @@ function test_basic_operations ()
 		end
 
 		if ! __is_container_ready \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 			${STARTUP_TIME} \
 			"/usr/sbin/varnishd " \
 			"varnishadm vcl.show -v boot"
@@ -238,14 +241,14 @@ function test_basic_operations ()
 
 		describe "Default initialisation"
 			varnish_logs="$(
-				docker exec -t \
-					varnish.pool-1.1.1 \
-					cat /var/log/varnish.log
+				docker logs \
+					varnish.1 \
+				2>&1
 			)"
 
 			varnish_parameters="$(
 				docker exec -t \
-					varnish.pool-1.1.1 \
+					varnish.1 \
 					varnishadm param.show
 			)"
 
@@ -294,7 +297,7 @@ function test_basic_operations ()
 				it "Is unaltered."
 					varnish_vcl_loaded_hash="$(
 						docker exec \
-							varnish.pool-1.1.1 \
+							varnish.1 \
 							varnishadm vcl.show -v boot \
 						| sed -n '/\/\/ VCL\.SHOW/,/\/\/ VCL\.SHOW/p' \
 						| sed \
@@ -373,12 +376,21 @@ function test_basic_operations ()
 				end
 
 				describe "Request with PHP session Cookie"
+					# Initial request required to test cache
+					curl -sI \
+						-H "Host: ${backend_hostname}" \
+						--cookie ~/.curl_cookies \
+						--cookie-jar ~/.curl_cookies \
+						http://127.0.0.1:${container_port_80}/session.php \
+						&> /dev/null
+
 					it "Has a cache pass."
 						header_x_varnish="$(
 							curl -sI \
 								-H "Host: ${backend_hostname}" \
-								-b "key_1=data_1; PHPSESSID=data_2" \
-								http://127.0.0.1:${container_port_80}/ \
+								--cookie ~/.curl_cookies \
+								--cookie-jar ~/.curl_cookies \
+								http://127.0.0.1:${container_port_80}/session.php \
 							| grep '^X-Varnish: ' \
 							| cut -c 12- \
 							| tr -d '\r'
@@ -497,20 +509,32 @@ function test_basic_operations ()
 				end
 
 				describe "Request with PHP session Cookie"
-					it "Has a cache pass."
-						printf -v \
-							request_headers \
-							-- 'Host: %s\n%s\n%s' \
-							"${backend_hostname}" \
-							"Cookie: key_1=data_1; app-session=data_2" \
-							"Connection: close"
+					phpsessid="$(
+						expect test/telnet-proxy-tcp4.exp \
+							127.0.0.2 \
+							127.0.0.1 \
+							${container_port_8443} \
+							'HEAD /session.php HTTP/1.1' \
+							| sed -En '/^HTTP\/[0-9\.]+ [0-9]+/,$p' \
+							| sed '/Connection closed by foreign host./d' \
+							| grep -Eo 'PHPSESSID=[^;]+' \
+							| sed 's~PHPSESSID=~~'
+					)"
 
+					printf -v \
+						request_headers \
+						-- 'Host: %s\n%s\n%s' \
+						"${backend_hostname}" \
+						"Cookie: key_1=data_1; PHPSESSID=${phpsessid}" \
+						"Connection: close"
+
+					it "Has a cache pass."
 						header_x_varnish="$(
 							expect test/telnet-proxy-tcp4.exp \
 								127.0.0.2 \
 								127.0.0.1 \
 								${container_port_8443} \
-								'HEAD / HTTP/1.1' "${request_headers}" \
+								'HEAD /session.php HTTP/1.1' "${request_headers}" \
 								| sed -En '/^HTTP\/[0-9\.]+ [0-9]+/,$p' \
 								| sed '/Connection closed by foreign host./d' \
 								| grep '^X-Varnish: ' \
@@ -610,7 +634,7 @@ function test_basic_operations ()
 		end
 
 		__terminate_container \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 		&> /dev/null
 	end
 
@@ -629,7 +653,7 @@ function test_custom_configuration ()
 	local varnish_vcl_loaded_hash=""
 	local varnish_vcl_source_hash=""
 
-	trap "__terminate_container varnish.pool-1.1.1 &> /dev/null; \
+	trap "__terminate_container varnish.1 &> /dev/null; \
 		__destroy; \
 		exit 1" \
 		INT TERM EXIT
@@ -637,19 +661,19 @@ function test_custom_configuration ()
 	describe "Customised Varnish configuration"
 		describe "Runs named container"
 			__terminate_container \
-				varnish.pool-1.1.1 \
+				varnish.1 \
 			&> /dev/null
 
 			it "Can publish ${DOCKER_PORT_MAP_TCP_80}:80."
 				docker run \
 					--detach \
-					--name varnish.pool-1.1.1 \
+					--name varnish.1 \
 					--env "VARNISH_MAX_THREADS=5000" \
 					--env "VARNISH_MIN_THREADS=100" \
 					--env "VARNISH_THREAD_TIMEOUT=300" \
 					--env "VARNISH_STORAGE=malloc,256M" \
 					--env "VARNISH_TTL=600" \
-					--env "VARNISH_VCL_CONF=dmNsIDQuMDsKCmltcG9ydCBkaXJlY3RvcnM7CmltcG9ydCBzdGQ7CgojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiMgSGVhbHRoY2hlY2sgcHJvYmUgKGJhc2ljKQojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCnByb2JlIGhlYWx0aGNoZWNrIHsKCS5pbnRlcnZhbCA9IDVzOwoJLnRpbWVvdXQgPSAyczsKCS53aW5kb3cgPSA1OwoJLnRocmVzaG9sZCA9IDM7CgkuaW5pdGlhbCA9IDI7CgkuZXhwZWN0ZWRfcmVzcG9uc2UgPSAyMDA7CgkucmVxdWVzdCA9CgkJIkdFVCAvIEhUVFAvMS4xIgoJCSJIb3N0OiBsb2NhbGhvc3QubG9jYWxkb21haW4iCgkJIkNvbm5lY3Rpb246IGNsb3NlIgoJCSJVc2VyLUFnZW50OiBWYXJuaXNoIgoJCSJBY2NlcHQtRW5jb2Rpbmc6IGd6aXAsIGRlZmxhdGUiOwp9CgojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiMgSFRUUCBCYWNrZW5kcwojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCmJhY2tlbmQgaHR0cF8xIHsgLmhvc3QgPSAiaHR0cGRfMSI7IC5wb3J0ID0gIjgwIjsgLmZpcnN0X2J5dGVfdGltZW91dCA9IDMwMHM7IC5wcm9iZSA9IGhlYWx0aGNoZWNrOyB9CgojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiMgSFRUUCAoSFRUUFMgVGVybWluYXRlZCkgQmFja2VuZHMKIyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQpiYWNrZW5kIHRlcm1pbmF0ZWRfaHR0cHNfMSB7IC5ob3N0ID0gImh0dHBkXzEiOyAucG9ydCA9ICI4NDQzIjsgLmZpcnN0X2J5dGVfdGltZW91dCA9IDMwMHM7IC5wcm9iZSA9IGhlYWx0aGNoZWNrOyB9CgojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiMgRGlyZWN0b3JzCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0Kc3ViIHZjbF9pbml0IHsKCW5ldyBkaXJlY3Rvcl9odHRwID0gZGlyZWN0b3JzLnJvdW5kX3JvYmluKCk7CglkaXJlY3Rvcl9odHRwLmFkZF9iYWNrZW5kKGh0dHBfMSk7CgoJbmV3IGRpcmVjdG9yX3Rlcm1pbmF0ZWRfaHR0cHMgPSBkaXJlY3RvcnMucm91bmRfcm9iaW4oKTsKCWRpcmVjdG9yX3Rlcm1pbmF0ZWRfaHR0cHMuYWRkX2JhY2tlbmQodGVybWluYXRlZF9odHRwc18xKTsKfQoKIyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQojIENsaWVudCBzaWRlCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0Kc3ViIHZjbF9yZWN2IHsKCWlmIChyZXEubWV0aG9kID09ICJQUkkiKSB7CgkJIyBSZWplY3QgU1BEWSBvciBIVFRQLzIuMCB3aXRoIE1ldGhvZCBOb3QgQWxsb3dlZAoJCXJldHVybiAoc3ludGgoNDA1KSk7Cgl9CgoJdW5zZXQgcmVxLmh0dHAuRm9yd2FyZGVkOwoJdW5zZXQgcmVxLmh0dHAuWC1Gb3J3YXJkZWQtUG9ydDsKCXVuc2V0IHJlcS5odHRwLlgtRm9yd2FyZGVkLVByb3RvOwoKCWlmIChzdGQucG9ydChzZXJ2ZXIuaXApID09IDg0NDMgfHwKCQlzdGQucG9ydChsb2NhbC5pcCkgPT0gODQ0MykgewoJCSMgU1NMIFRlcm1pbmF0ZWQgdXBzdHJlYW0gc28gaW5kY2F0ZSB0aGlzIHdpdGggYSBjdXN0b20gaGVhZGVyCgkJc2V0IHJlcS5odHRwLlgtRm9yd2FyZGVkLVBvcnQgPSAiNDQzIjsKCQlzZXQgcmVxLmh0dHAuWC1Gb3J3YXJkZWQtUHJvdG8gPSAiaHR0cHMiOwoJCXNldCByZXEuYmFja2VuZF9oaW50ID0gZGlyZWN0b3JfdGVybWluYXRlZF9odHRwcy5iYWNrZW5kKCk7Cgl9IGVsc2UgaWYgKHN0ZC5wb3J0KHNlcnZlci5pcCkgPT0gODAgfHwKCQlzdGQucG9ydChsb2NhbC5pcCkgPT0gODApIHsKCQkjIERlZmF1bHQgdG8gSFRUUAoJCXNldCByZXEuaHR0cC5YLUZvcndhcmRlZC1Qb3J0ID0gIjgwIjsKCQlzZXQgcmVxLmJhY2tlbmRfaGludCA9IGRpcmVjdG9yX2h0dHAuYmFja2VuZCgpOwoJfSBlbHNlIHsKCQlyZXR1cm4gKHN5bnRoKDQwMykpOwoJfQoKCSMgc2V0IHJlcS5odHRwLlgtVmFybmlzaC1HcmFjZSA9ICJub25lIjsKCglpZiAocmVxLm1ldGhvZCAhPSAiR0VUIiAmJgoJCXJlcS5tZXRob2QgIT0gIkhFQUQiICYmCgkJcmVxLm1ldGhvZCAhPSAiUFVUIiAmJgoJCXJlcS5tZXRob2QgIT0gIlBPU1QiICYmCgkJcmVxLm1ldGhvZCAhPSAiVFJBQ0UiICYmCgkJcmVxLm1ldGhvZCAhPSAiT1BUSU9OUyIgJiYKCQlyZXEubWV0aG9kICE9ICJERUxFVEUiKSB7CgkJIyBOb24tUkZDMjYxNiBvciBDT05ORUNUIHdoaWNoIGlzIHdlaXJkLgoJCXJldHVybiAocGlwZSk7Cgl9CgoJaWYgKHJlcS5tZXRob2QgIT0gIkdFVCIgJiYgCgkJcmVxLm1ldGhvZCAhPSAiSEVBRCIpIHsKCQkjIE9ubHkgZGVhbCB3aXRoIEdFVCBhbmQgSEVBRCBieSBkZWZhdWx0CgkJcmV0dXJuIChwYXNzKTsKCX0KCgkjIEhhbmRsZSBFeHBlY3QgcmVxdWVzdAoJaWYgKHJlcS5odHRwLkV4cGVjdCkgewoJCXJldHVybiAocGlwZSk7Cgl9CgoJIyBDYWNoZS1Db250cm9sCglpZiAocmVxLmh0dHAuQ2FjaGUtQ29udHJvbCB+ICIocHJpdmF0ZXxuby1jYWNoZXxuby1zdG9yZSkiKSB7CgkJcmV0dXJuIChwYXNzKTsKCX0KCgkjIENhY2hlIHN0YXRpYyBhc3NldHMKCWlmIChyZXEudXJsIH4gIlwuKGdpZnxwbmd8anBlP2d8aWNvfHN3Znxjc3N8anN8aHRtbD98dHh0KSQiKSB7CgkJdW5zZXQgcmVxLmh0dHAuQ29va2llOwoJCXJldHVybiAoaGFzaCk7Cgl9CgoJIyBSZW1vdmUgYWxsIGNvb2tpZXMgdGhhdCB3ZSBkb2Vzbid0IG5lZWQgdG8ga25vdyBhYm91dC4gZS5nLiAzcmQgcGFydHkgYW5hbHl0aWNzIGNvb2tpZXMKCWlmIChyZXEuaHR0cC5Db29raWUpIHsKCQlzZXQgcmVxLmh0dHAuQ29va2llID0gIjsiICsgcmVxLmh0dHAuQ29va2llOwoJCXNldCByZXEuaHR0cC5Db29raWUgPSByZWdzdWJhbGwocmVxLmh0dHAuQ29va2llLCAiOyArIiwgIjsiKTsKCQlzZXQgcmVxLmh0dHAuQ29va2llID0gcmVnc3ViYWxsKHJlcS5odHRwLkNvb2tpZSwgIjsoUEhQU0VTU0lEfGFwcC1zZXNzaW9uKT0iLCAiOyBcMT0iKTsKCQlzZXQgcmVxLmh0dHAuQ29va2llID0gcmVnc3ViYWxsKHJlcS5odHRwLkNvb2tpZSwgIjtbXiBdW147XSoiLCAiIik7CgkJc2V0IHJlcS5odHRwLkNvb2tpZSA9IHJlZ3N1YmFsbChyZXEuaHR0cC5Db29raWUsICJeWzsgXSt8WzsgXSskIiwgIiIpOwoKCQlpZiAocmVxLmh0dHAuQ29va2llID09ICIiKSB7CgkJCXVuc2V0IHJlcS5odHRwLkNvb2tpZTsKCQl9Cgl9CgoJIyBOb24tY2FjaGVhYmxlIHJlcXVlc3RzCglpZiAocmVxLmh0dHAuQXV0aG9yaXphdGlvbiB8fCAKCQlyZXEuaHR0cC5Db29raWUpIHsKCQlyZXR1cm4gKHBhc3MpOwoJfQoKCXJldHVybiAoaGFzaCk7Cn0KCnN1YiB2Y2xfaGFzaCB7CgloYXNoX2RhdGEocmVxLnVybCk7CgoJaWYgKHJlcS5odHRwLmhvc3QpIHsKCQloYXNoX2RhdGEocmVxLmh0dHAuaG9zdCk7Cgl9IGVsc2UgewoJCWhhc2hfZGF0YShzZXJ2ZXIuaXApOwoJfQoKCWlmIChyZXEuaHR0cC5YLUZvcndhcmRlZC1Qcm90bykgewoJCWhhc2hfZGF0YShyZXEuaHR0cC5YLUZvcndhcmRlZC1Qcm90byk7Cgl9CgoJcmV0dXJuIChsb29rdXApOwp9CgpzdWIgdmNsX2hpdCB7CglpZiAob2JqLnR0bCA+PSAwcykgewoJCXJldHVybiAoZGVsaXZlcik7Cgl9CgoJaWYgKHN0ZC5oZWFsdGh5KHJlcS5iYWNrZW5kX2hpbnQpICYmIAoJCW9iai50dGwgKyAxNXMgPiAwcykgewoJCSMgc2V0IHJlcS5odHRwLlgtVmFybmlzaC1HcmFjZSA9ICJub3JtYWwiOwoJCXJldHVybiAoZGVsaXZlcik7Cgl9IGVsc2UgaWYgKG9iai50dGwgKyBvYmouZ3JhY2UgPiAwcykgewoJCSMgc2V0IHJlcS5odHRwLlgtVmFybmlzaC1HcmFjZSA9ICJmdWxsIjsKCQlyZXR1cm4gKGRlbGl2ZXIpOwoJfQoKCXJldHVybiAobWlzcyk7Cn0KCnN1YiB2Y2xfZGVsaXZlciB7CgkjIHNldCByZXNwLmh0dHAuWC1WYXJuaXNoLUdyYWNlID0gcmVxLmh0dHAuWC1WYXJuaXNoLUdyYWNlOwoKCXJldHVybiAoZGVsaXZlcik7Cn0KCiMgRXJyb3JzOiA0MTMsIDQxNyAmIDUwMwpzdWIgdmNsX3N5bnRoIHsKCXNldCByZXNwLmh0dHAuQ29udGVudC1UeXBlID0gInRleHQvaHRtbDsgY2hhcnNldD11dGYtOCI7CglzZXQgcmVzcC5odHRwLlJldHJ5LUFmdGVyID0gIjUiOwoJc3ludGhldGljKCB7IjwhRE9DVFlQRSBodG1sPgo8aHRtbD4KCTxoZWFkPgoJCTx0aXRsZT5FcnJvcjwvdGl0bGU+CgkJPHN0eWxlPgoJCQlib2R5e2ZvbnQtZmFtaWx5OnNhbnMtc2VyaWY7Y29sb3I6IzY2NjtiYWNrZ3JvdW5kLWNvbG9yOiNmMWYxZjE7bWFyZ2luOjEyJTttYXgtd2lkdGg6NTAlO30KCQkJaDF7Y29sb3I6IzMzMztmb250LXNpemU6MS41ZW07Zm9udC13ZWlnaHQ6NDAwO3RleHQtdHJhbnNmb3JtOnVwcGVyY2FzZTt9CgkJPC9zdHlsZT4KCTwvaGVhZD4KCTxib2R5PgoJCTxoMT4ifSArIHJlc3Auc3RhdHVzICsgIiAiICsgcmVzcC5yZWFzb24gKyB7IjwvaDE+CgkJPHA+In0gKyByZXNwLnJlYXNvbiArIHsiPC9wPgoJCTxwPlhJRDogIn0gKyByZXEueGlkICsgeyI8L3A+Cgk8L2JvZHk+CjwvaHRtbD4KIn0gKTsKCXJldHVybiAoZGVsaXZlcik7Cn0KCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KIyBCYWNrZW5kCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0Kc3ViIHZjbF9iYWNrZW5kX3Jlc3BvbnNlIHsKCSMgS2VlcCBvYmplY3RzIGJleW9uZCB0aGVpciB0dGwKCXNldCBiZXJlc3AuZ3JhY2UgPSAxMmg7CgoJaWYgKGJlcmVzcC50dGwgPD0gMHMgfHwKCQliZXJlc3AuaHR0cC5TZXQtQ29va2llIHx8CgkJYmVyZXNwLmh0dHAuU3Vycm9nYXRlLWNvbnRyb2wgfiAibm8tc3RvcmUiIHx8CgkJKCAhIGJlcmVzcC5odHRwLlN1cnJvZ2F0ZS1Db250cm9sICYmIAoJCQliZXJlc3AuaHR0cC5DYWNoZS1Db250cm9sIH4gIihwcml2YXRlfG5vLWNhY2hlfG5vLXN0b3JlKSIpIHx8CgkJYmVyZXNwLmh0dHAuVmFyeSA9PSAiKiIpIHsKCQkjIE1hcmsgYXMgIkhpdC1Gb3ItUGFzcyIgZm9yIHRoZSBuZXh0IDIgbWludXRlcwoJCXNldCBiZXJlc3AudW5jYWNoZWFibGUgPSB0cnVlOwoJCXNldCBiZXJlc3AudHRsID0gMTIwczsKCQlyZXR1cm4gKGRlbGl2ZXIpOwoJfQoKCXJldHVybiAoZGVsaXZlcik7Cn0KCnN1YiB2Y2xfYmFja2VuZF9lcnJvciB7CglzZXQgYmVyZXNwLmh0dHAuQ29udGVudC1UeXBlID0gInRleHQvaHRtbDsgY2hhcnNldD11dGYtOCI7CglzZXQgYmVyZXNwLmh0dHAuUmV0cnktQWZ0ZXIgPSAiNSI7CglzeW50aGV0aWMoIHsiPCFET0NUWVBFIGh0bWw+CjxodG1sPgoJPHN0eWxlPgoJCWJvZHl7Zm9udC1mYW1pbHk6c2Fucy1zZXJpZjtjb2xvcjojNjY2O2JhY2tncm91bmQtY29sb3I6I2YxZjFmMTttYXJnaW46MTIlO21heC13aWR0aDo1MCU7fQoJCWgxe2NvbG9yOiMzMzM7Zm9udC1zaXplOjEuNWVtO2ZvbnQtd2VpZ2h0OjQwMDt0ZXh0LXRyYW5zZm9ybTp1cHBlcmNhc2U7fQoJPC9zdHlsZT4KCTxoZWFkPgoJCTx0aXRsZT5FcnJvcjwvdGl0bGU+Cgk8L2hlYWQ+Cgk8Ym9keT4KCQk8aDE+In0gKyBiZXJlc3Auc3RhdHVzICsgIiAiICsgYmVyZXNwLnJlYXNvbiArIHsiPC9oMT4KCQk8cD4ifSArIGJlcmVzcC5yZWFzb24gKyB7IjwvcD4KCQk8cD5YSUQ6ICJ9ICsgYmVyZXEueGlkICsgeyI8L3A+Cgk8L2JvZHk+CjwvaHRtbD4KIn0gKTsKCXJldHVybiAoZGVsaXZlcik7Cn0K" \
+					--env "VARNISH_VCL_CONF=dmNsIDQuMDsKCmltcG9ydCBkaXJlY3RvcnM7CmltcG9ydCBzdGQ7CgojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQojIEhlYWx0aGNoZWNrIHByb2JlIChiYXNpYykKIyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KcHJvYmUgaGVhbHRoY2hlY2sgewoJLmludGVydmFsID0gNXM7CgkudGltZW91dCA9IDJzOwoJLndpbmRvdyA9IDU7CgkudGhyZXNob2xkID0gMzsKCS5pbml0aWFsID0gMjsKCS5leHBlY3RlZF9yZXNwb25zZSA9IDIwMDsKCS5yZXF1ZXN0ID0KCQkiR0VUIC8gSFRUUC8xLjEiCgkJIkhvc3Q6IGxvY2FsaG9zdC5sb2NhbGRvbWFpbiIKCQkiQ29ubmVjdGlvbjogY2xvc2UiCgkJIlVzZXItQWdlbnQ6IFZhcm5pc2giCgkJIkFjY2VwdC1FbmNvZGluZzogZ3ppcCwgZGVmbGF0ZSI7Cn0KCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiMgQmFja2VuZHMKIyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KYmFja2VuZCBodHRwXzEgewoJLmhvc3QgPSAiaHR0cGRfMSI7CgkucG9ydCA9ICI4MCI7CgkuZmlyc3RfYnl0ZV90aW1lb3V0ID0gMzAwczsKCS5wcm9iZSA9IGhlYWx0aGNoZWNrOwp9CgpiYWNrZW5kIHByb3h5XzEgewoJLmhvc3QgPSAiaHR0cGRfMSI7CgkucG9ydCA9ICI4NDQzIjsKCS5maXJzdF9ieXRlX3RpbWVvdXQgPSAzMDBzOwoJLnByb2JlID0gaGVhbHRoY2hlY2s7Cn0KCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiMgRGlyZWN0b3JzCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCnN1YiB2Y2xfaW5pdCB7CgluZXcgZGlyZWN0b3JfaHR0cCA9IGRpcmVjdG9ycy5yb3VuZF9yb2JpbigpOwoJZGlyZWN0b3JfaHR0cC5hZGRfYmFja2VuZChodHRwXzEpOwoKCW5ldyBkaXJlY3Rvcl9wcm94eSA9IGRpcmVjdG9ycy5yb3VuZF9yb2JpbigpOwoJZGlyZWN0b3JfcHJveHkuYWRkX2JhY2tlbmQocHJveHlfMSk7Cn0KCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiMgQ2xpZW50IHNpZGUKIyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0Kc3ViIHZjbF9yZWN2IHsKCWlmIChyZXEuaHR0cC5Db29raWUgIT0gIiIpIHsKCQlzZXQgcmVxLmh0dHAuWC1Db29raWUgPSByZXEuaHR0cC5Db29raWU7Cgl9Cgl1bnNldCByZXEuaHR0cC5Db29raWU7Cgl1bnNldCByZXEuaHR0cC5Gb3J3YXJkZWQ7Cgl1bnNldCByZXEuaHR0cC5Qcm94eTsKCXVuc2V0IHJlcS5odHRwLlgtRm9yd2FyZGVkLVBvcnQ7Cgl1bnNldCByZXEuaHR0cC5YLUZvcndhcmRlZC1Qcm90bzsKCglpZiAoc3RkLnBvcnQoc2VydmVyLmlwKSA9PSA4NDQzIHx8CgkJc3RkLnBvcnQobG9jYWwuaXApID09IDg0NDMpIHsKCQkjIFBvcnQgODQ0MwoJCXNldCByZXEuaHR0cC5YLUZvcndhcmRlZC1Qb3J0ID0gIjQ0MyI7CgkJc2V0IHJlcS5odHRwLlgtRm9yd2FyZGVkLVByb3RvID0gImh0dHBzIjsKCQlzZXQgcmVxLmJhY2tlbmRfaGludCA9IGRpcmVjdG9yX3Byb3h5LmJhY2tlbmQoKTsKCX0gZWxzZSBpZiAoc3RkLnBvcnQoc2VydmVyLmlwKSA9PSA4MCB8fAoJCXN0ZC5wb3J0KGxvY2FsLmlwKSA9PSA4MCkgewoJCSMgUG9ydCA4MAoJCXNldCByZXEuaHR0cC5YLUZvcndhcmRlZC1Qb3J0ID0gIjgwIjsKCQlzZXQgcmVxLmJhY2tlbmRfaGludCA9IGRpcmVjdG9yX2h0dHAuYmFja2VuZCgpOwoJfSBlbHNlIHsKCQkjIFJlamVjdCB1bmV4cGVjdGVkIHBvcnRzCgkJcmV0dXJuIChzeW50aCg0MDMpKTsKCX0KCglpZiAoc3RkLmhlYWx0aHkocmVxLmJhY2tlbmRfaGludCkpIHsKCQkjIENhcCBncmFjZSBwZXJpb2QgZm9yIGhlYWx0aHkgYmFja2VuZHMKCQlzZXQgcmVxLmdyYWNlID0gMTVzOwoJfQp9CgpzdWIgdmNsX2hhc2ggewoJaGFzaF9kYXRhKHJlcS51cmwpOwoKCWlmIChyZXEuaHR0cC5Ib3N0KSB7CgkJaGFzaF9kYXRhKHJlcS5odHRwLkhvc3QpOwoJfSBlbHNlIHsKCQloYXNoX2RhdGEoc2VydmVyLmlwKTsKCX0KCglpZiAocmVxLmh0dHAuWC1Gb3J3YXJkZWQtUHJvdG8pIHsKCQloYXNoX2RhdGEocmVxLmh0dHAuWC1Gb3J3YXJkZWQtUHJvdG8pOwoJfQoKCWlmIChyZXEuaHR0cC5YLUNvb2tpZSkgewoJCXNldCByZXEuaHR0cC5Db29raWUgPSByZXEuaHR0cC5YLUNvb2tpZTsKCX0KCXVuc2V0IHJlcS5odHRwLlgtQ29va2llOwoKCXJldHVybiAobG9va3VwKTsKfQoKc3ViIHZjbF9oaXQgewoJcmV0dXJuIChkZWxpdmVyKTsKfQoKc3ViIHZjbF9kZWxpdmVyIHsKCXVuc2V0IHJlc3AuaHR0cC5WaWE7CgoJaWYgKHJlc3Auc3RhdHVzID49IDQwMCkgewoJCXJldHVybiAoc3ludGgocmVzcC5zdGF0dXMpKTsKCX0KfQoKc3ViIHZjbF9zeW50aCB7CglzZXQgcmVzcC5odHRwLkNvbnRlbnQtVHlwZSA9ICJ0ZXh0L2h0bWw7IGNoYXJzZXQ9dXRmLTgiOwoJc2V0IHJlc3AuaHR0cC5SZXRyeS1BZnRlciA9ICI1IjsKCXNldCByZXNwLmh0dHAuWC1GcmFtZS1PcHRpb25zID0gIkRFTlkiOwoJc2V0IHJlc3AuaHR0cC5YLVhTUy1Qcm90ZWN0aW9uID0gIjE7IG1vZGU9YmxvY2siOwoKCWlmIChyZXEudXJsIH4gIig/aSlcLihjc3N8ZW90fGdpZnxpY298anBlP2d8anN8cG5nfHN2Z3x0dGZ8dHh0fHdvZmYyPykoXD8uKik/JCIpIHsKCQkjIFJlc3BvbmQgd2l0aCBzaW1wbGUgdGV4dCBlcnJvciBmb3Igc3RhdGljIGFzc2V0cy4KCQlzZXQgcmVzcC5ib2R5ID0gcmVzcC5zdGF0dXMgKyAiICIgKyByZXNwLnJlYXNvbjsKCQlzZXQgcmVzcC5odHRwLkNvbnRlbnQtVHlwZSA9ICJ0ZXh0L3BsYWluOyBjaGFyc2V0PXV0Zi04IjsKCX0gZWxzZSBpZiAocmVxLnVybCB+ICIoP2kpXi9zdGF0dXNcLnBocChcPy4qKT8kIikgewoJCSMgUmVzcG9uZCB3aXRoIHNpbXBsZSB0ZXh0IGVycm9yIGZvciBzdGF0dXMgdXJpLgoJCXNldCByZXNwLmJvZHkgPSByZXNwLnJlYXNvbjsKCQlzZXQgcmVzcC5odHRwLkNhY2hlLUNvbnRyb2wgPSAibm8tc3RvcmUiOwoJCXNldCByZXNwLmh0dHAuQ29udGVudC1UeXBlID0gInRleHQvcGxhaW47IGNoYXJzZXQ9dXRmLTgiOwoJfSBlbHNlIGlmIChyZXNwLnN0YXR1cyA8IDUwMCkgewoJCXNldCByZXNwLmJvZHkgPSB7IjwhRE9DVFlQRSBodG1sPgo8aHRtbD4KCTxoZWFkPgoJCTx0aXRsZT4ifSArIHJlc3AucmVhc29uICsgeyI8L3RpdGxlPgoJCTxzdHlsZT4KCQkJYm9keXtjb2xvcjojNjY2O2JhY2tncm91bmQtY29sb3I6I2YxZjFmMTtmb250LWZhbWlseTpzYW5zLXNlcmlmO21hcmdpbjoxMiU7bWF4LXdpZHRoOjUwJTt9CgkJCWgxLGgye2NvbG9yOiMzMzM7Zm9udC1zaXplOjRyZW07Zm9udC13ZWlnaHQ6NDAwO3RleHQtdHJhbnNmb3JtOnVwcGVyY2FzZTt9CgkJCWgye2NvbG9yOiMzMzM7Zm9udC1zaXplOjJyZW07fQoJCQlwe2ZvbnQtc2l6ZToxLjVyZW07fQoJCTwvc3R5bGU+Cgk8L2hlYWQ+Cgk8Ym9keT4KCQk8aDE+In0gKyByZXNwLnN0YXR1cyArIHsiPC9oMT4KCQk8aDI+In0gKyByZXNwLnJlYXNvbiArIHsiPC9oMj4KCTwvYm9keT4KPC9odG1sPiJ9OwoJfSBlbHNlIHsKCQlzZXQgcmVzcC5ib2R5ID0geyI8IURPQ1RZUEUgaHRtbD4KPGh0bWw+Cgk8aGVhZD4KCQk8dGl0bGU+In0gKyByZXNwLnJlYXNvbiArIHsiPC90aXRsZT4KCQk8c3R5bGU+CgkJCWJvZHl7Y29sb3I6IzY2NjtiYWNrZ3JvdW5kLWNvbG9yOiNmMWYxZjE7Zm9udC1mYW1pbHk6c2Fucy1zZXJpZjttYXJnaW46MTIlO21heC13aWR0aDo1MCU7fQoJCQloMSxoMntjb2xvcjojMzMzO2ZvbnQtc2l6ZTo0cmVtO2ZvbnQtd2VpZ2h0OjQwMDt0ZXh0LXRyYW5zZm9ybTp1cHBlcmNhc2U7fQoJCQloMntjb2xvcjojMzMzO2ZvbnQtc2l6ZToycmVtO30KCQkJcHtmb250LXNpemU6MS41cmVtO30KCQk8L3N0eWxlPgoJPC9oZWFkPgoJPGJvZHk+CgkJPGgxPiJ9ICsgcmVzcC5zdGF0dXMgKyB7IjwvaDE+CgkJPGgyPiJ9ICsgcmVzcC5yZWFzb24gKyB7IjwvaDI+CgkJPHA+WElEOiAifSArIHJlcS54aWQgKyB7IjwvcD4KCTwvYm9keT4KPC9odG1sPiJ9OwoJfQoKCXJldHVybiAoZGVsaXZlcik7Cn0KCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiMgQmFja2VuZAojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQpzdWIgdmNsX2JhY2tlbmRfcmVzcG9uc2UgewoJc2V0IGJlcmVzcC5ncmFjZSA9IDI0aDsKCglpZiAoYmVyZXEudW5jYWNoZWFibGUpIHsKCQlyZXR1cm4gKGRlbGl2ZXIpOwoJfSBlbHNlIGlmIChiZXJlc3AudHRsIDw9IDBzIHx8CgkJYmVyZXNwLmh0dHAuU2V0LUNvb2tpZSB8fAoJCWJlcmVzcC5odHRwLlN1cnJvZ2F0ZS1Db250cm9sIH4gIig/aSlebm8tc3RvcmUkIiB8fAoJCSggISBiZXJlc3AuaHR0cC5TdXJyb2dhdGUtQ29udHJvbCAmJgoJCQliZXJlc3AuaHR0cC5DYWNoZS1Db250cm9sIH4gIig/aSleKHByaXZhdGV8bm8tY2FjaGV8bm8tc3RvcmUpJCIpIHx8CgkJYmVyZXNwLmh0dHAuVmFyeSA9PSAiKiIpIHsKCQkjIE1hcmsgYXMgImhpdC1mb3ItbWlzcyIgZm9yIDIgbWludXRlcwoJCXNldCBiZXJlc3AudHRsID0gMTIwczsKCQlzZXQgYmVyZXNwLnVuY2FjaGVhYmxlID0gdHJ1ZTsKCX0KCglyZXR1cm4gKGRlbGl2ZXIpOwp9CgpzdWIgdmNsX2JhY2tlbmRfZXJyb3IgewoJc2V0IGJlcmVzcC5odHRwLkNvbnRlbnQtVHlwZSA9ICJ0ZXh0L2h0bWw7IGNoYXJzZXQ9dXRmLTgiOwoJc2V0IGJlcmVzcC5odHRwLlJldHJ5LUFmdGVyID0gIjUiOwoJc2V0IGJlcmVzcC5odHRwLlgtRnJhbWUtT3B0aW9ucyA9ICJERU5ZIjsKCXNldCBiZXJlc3AuaHR0cC5YLVhTUy1Qcm90ZWN0aW9uID0gIjE7IG1vZGU9YmxvY2siOwoKCWlmIChiZXJlcS51cmwgfiAiKD9pKVwuKGNzc3xlb3R8Z2lmfGljb3xqcGU/Z3xqc3xwbmd8c3ZnfHR0Znx0eHR8d29mZjI/KShcPy4qKT8kIikgewoJCSMgUmVzcG9uZCB3aXRoIHNpbXBsZSB0ZXh0IGVycm9yIGZvciBzdGF0aWMgYXNzZXRzLgoJCXNldCBiZXJlc3AuYm9keSA9IGJlcmVzcC5zdGF0dXMgKyAiICIgKyBiZXJlc3AucmVhc29uOwoJCXNldCBiZXJlc3AuaHR0cC5Db250ZW50LVR5cGUgPSAidGV4dC9wbGFpbjsgY2hhcnNldD11dGYtOCI7Cgl9IGVsc2UgaWYgKGJlcmVxLnVybCB+ICIoP2kpXi9zdGF0dXNcLnBocChcPy4qKT8kIikgewoJCSMgUmVzcG9uZCB3aXRoIHNpbXBsZSB0ZXh0IGVycm9yIGZvciBzdGF0dXMgdXJpLgoJCXNldCBiZXJlc3AuYm9keSA9IGJlcmVzcC5yZWFzb247CgkJc2V0IGJlcmVzcC5odHRwLkNhY2hlLUNvbnRyb2wgPSAibm8tc3RvcmUiOwoJCXNldCBiZXJlc3AuaHR0cC5Db250ZW50LVR5cGUgPSAidGV4dC9wbGFpbjsgY2hhcnNldD11dGYtOCI7Cgl9IGVsc2UgewoJCXNldCBiZXJlc3AuYm9keSA9IHsiPCFET0NUWVBFIGh0bWw+CjxodG1sPgoJPGhlYWQ+CgkJPHRpdGxlPiJ9ICsgYmVyZXNwLnJlYXNvbiArIHsiPC90aXRsZT4KCQk8c3R5bGU+CgkJCWJvZHl7Y29sb3I6IzY2NjtiYWNrZ3JvdW5kLWNvbG9yOiNmMWYxZjE7Zm9udC1mYW1pbHk6c2Fucy1zZXJpZjttYXJnaW46MTIlO21heC13aWR0aDo1MCU7fQoJCQloMSxoMntjb2xvcjojMzMzO2ZvbnQtc2l6ZTo0cmVtO2ZvbnQtd2VpZ2h0OjQwMDt0ZXh0LXRyYW5zZm9ybTp1cHBlcmNhc2U7fQoJCQloMntjb2xvcjojMzMzO2ZvbnQtc2l6ZToycmVtO30KCQkJcHtmb250LXNpemU6MS41cmVtO30KCQk8L3N0eWxlPgoJPC9oZWFkPgoJPGJvZHk+CgkJPGgxPiJ9ICsgYmVyZXNwLnN0YXR1cyArIHsiPC9oMT4KCQk8aDI+In0gKyBiZXJlc3AucmVhc29uICsgeyI8L2gyPgoJCTxwPlhJRDogIn0gKyBiZXJlcS54aWQgKyB7IjwvcD4KCTwvYm9keT4KPC9odG1sPiJ9OwoJfQoKCXJldHVybiAoZGVsaXZlcik7Cn0K" \
 					--network ${backend_network} \
 					--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
 					--publish ${DOCKER_PORT_MAP_TCP_8443}:8443 \
@@ -661,7 +685,7 @@ function test_custom_configuration ()
 
 				container_port_80="$(
 					__get_container_port \
-						varnish.pool-1.1.1 \
+						varnish.1 \
 						80/tcp
 				)"
 
@@ -679,7 +703,7 @@ function test_custom_configuration ()
 		end
 
 		if ! __is_container_ready \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 			${STARTUP_TIME} \
 			"/usr/sbin/varnishd " \
 			"varnishadm vcl.show -v boot"
@@ -689,14 +713,14 @@ function test_custom_configuration ()
 
 		describe "Custom initialisation"
 			varnish_logs="$(
-				docker exec -t \
-					varnish.pool-1.1.1 \
-					cat /var/log/varnish.log
+				docker logs \
+					varnish.1 \
+				2>&1
 			)"
 
 			varnish_parameters="$(
 				docker exec -t \
-					varnish.pool-1.1.1 \
+					varnish.1 \
 					varnishadm param.show
 			)"
 
@@ -745,7 +769,7 @@ function test_custom_configuration ()
 				it "Is unaltered."
 					varnish_vcl_loaded_hash="$(
 						docker exec \
-							varnish.pool-1.1.1 \
+							varnish.1 \
 							varnishadm vcl.show -v boot \
 						| sed -n '/\/\/ VCL\.SHOW/,/\/\/ VCL\.SHOW/p' \
 						| sed \
@@ -773,19 +797,19 @@ function test_custom_configuration ()
 		end
 
 		__terminate_container \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 		&> /dev/null
 	end
 
 	describe "Configure autostart"
 		__terminate_container \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 		&> /dev/null
 
 		it "Can disable varnishd-wrapper."
 			docker run \
 				--detach \
-				--name varnish.pool-1.1.1 \
+				--name varnish.1 \
 				--env VARNISH_AUTOSTART_VARNISHD_WRAPPER=false \
 				--network ${backend_network} \
 				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
@@ -796,11 +820,11 @@ function test_custom_configuration ()
 			sleep ${STARTUP_TIME}
 
 			docker ps \
-				--filter "name=varnish.pool-1.1.1" \
+				--filter "name=varnish.1" \
 				--filter "health=healthy" \
 			&> /dev/null \
 			&& docker top \
-				varnish.pool-1.1.1 \
+				varnish.1 \
 			| grep -qE '/usr/sbin/varnishd '
 
 			assert equal \
@@ -809,13 +833,13 @@ function test_custom_configuration ()
 		end
 
 		__terminate_container \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 		&> /dev/null
 
 		it "Can enable varnishncsa-wrapper."
 			docker run \
 				--detach \
-				--name varnish.pool-1.1.1 \
+				--name varnish.1 \
 				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
 				--network ${backend_network} \
 				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
@@ -824,7 +848,7 @@ function test_custom_configuration ()
 			&> /dev/null
 
 			if ! __is_container_ready \
-				varnish.pool-1.1.1 \
+				varnish.1 \
 				${STARTUP_TIME} \
 				"/usr/sbin/varnishd " \
 				"varnishadm vcl.show -v boot"
@@ -833,11 +857,11 @@ function test_custom_configuration ()
 			fi
 
 			docker ps \
-				--filter "name=varnish.pool-1.1.1" \
+				--filter "name=varnish.1" \
 				--filter "health=healthy" \
 			&> /dev/null \
 			&& docker top \
-				varnish.pool-1.1.1 \
+				varnish.1 \
 			| grep -qE '/usr/bin/varnishncsa '
 
 			assert equal \
@@ -846,19 +870,19 @@ function test_custom_configuration ()
 		end
 
 		__terminate_container \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 		&> /dev/null
 	end
 
 	describe "Configure Apache/NCSA access log"
 		__terminate_container \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 		&> /dev/null
 
-		it "Outputs in combined format"
+		it "Outputs in combined format."
 			docker run \
 				--detach \
-				--name varnish.pool-1.1.1 \
+				--name varnish.1 \
 				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
 				--network ${backend_network} \
 				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
@@ -867,7 +891,7 @@ function test_custom_configuration ()
 			&> /dev/null
 
 			if ! __is_container_ready \
-				varnish.pool-1.1.1 \
+				varnish.1 \
 				${STARTUP_TIME} \
 				"/usr/sbin/varnishd " \
 				"varnishadm vcl.show -v boot"
@@ -876,7 +900,7 @@ function test_custom_configuration ()
 			fi
 
 			if ! __is_container_ready \
-				varnish.pool-1.1.1 \
+				varnish.1 \
 				${STARTUP_TIME} \
 				"/usr/bin/varnishncsa "
 			then
@@ -885,43 +909,24 @@ function test_custom_configuration ()
 
 			container_port_80="$(
 				__get_container_port \
-					varnish.pool-1.1.1 \
+					varnish.1 \
 					80/tcp
 			)"
 
-			# Ensure log file exists before checking it's contents
-			counter=0
-			while true
-			do
-				if (( counter > 6 ))
-				then
-					break
-				fi
+			# Make a request to populate the access_log
+			curl -sI \
+				-X GET \
+				-H "Host: ${backend_hostname}" \
+				http://127.0.0.1:${container_port_80}/ \
+			&> /dev/null
 
-				# Make a request to populate the access_log
-				curl -sI \
-					-X GET \
-					-H "Host: ${backend_hostname}" \
-					http://127.0.0.1:${container_port_80}/ \
-				&> /dev/null
+			sleep 2
 
-				if docker exec \
-					varnish.pool-1.1.1 \
-					bash -c "[[ -s /var/log/varnish/access_log ]]"
-				then
-					break
-				fi
-
-				sleep 0.5
-				(( counter += 1 ))
-			done
-
-			docker exec \
-				varnish.pool-1.1.1 \
-				tail -n 1 \
-				/var/log/varnish/access_log \
+			docker logs \
+				--tail 1 \
+				varnish.1 \
 			| grep -qE \
-				"^.+ .+ .+ \[.+\] \"GET (http:\/\/${backend_hostname})?/ HTTP/1\.1\" 200 .+ \".+\" \".*\"$" \
+				"^.+ .+ .+ \[.+\] \"GET (http:\/\/${backend_hostname})?/ HTTP/1\.1\" 200 .+ \".+\" \".*\"\$" \
 			&> /dev/null
 
 			assert equal \
@@ -930,13 +935,13 @@ function test_custom_configuration ()
 		end
 
 		__terminate_container \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 		&> /dev/null
 
-		it "Outputs in custom format"
+		it "Outputs in custom format."
 			docker run \
 				--detach \
-				--name varnish.pool-1.1.1 \
+				--name varnish.1 \
 				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
 				--env VARNISH_VARNISHNCSA_FORMAT="%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\" %{Varnish:hitmiss}x" \
 				--network ${backend_network} \
@@ -946,7 +951,7 @@ function test_custom_configuration ()
 			&> /dev/null
 
 			if ! __is_container_ready \
-				varnish.pool-1.1.1 \
+				varnish.1 \
 				${STARTUP_TIME} \
 				"/usr/sbin/varnishd " \
 				"varnishadm vcl.show -v boot"
@@ -955,7 +960,7 @@ function test_custom_configuration ()
 			fi
 
 			if ! __is_container_ready \
-				varnish.pool-1.1.1 \
+				varnish.1 \
 				${STARTUP_TIME} \
 				"/usr/bin/varnishncsa "
 			then
@@ -964,43 +969,24 @@ function test_custom_configuration ()
 
 			container_port_80="$(
 				__get_container_port \
-					varnish.pool-1.1.1 \
+					varnish.1 \
 					80/tcp
 			)"
 
-			# Ensure log file exists before checking it's contents
-			counter=0
-			while true
-			do
-				if (( counter > 6 ))
-				then
-					break
-				fi
+			# Make a request to populate the access_log
+			curl -sI \
+				-X GET \
+				-H "Host: ${backend_hostname}" \
+				http://127.0.0.1:${container_port_80}/ \
+			&> /dev/null
 
-				# Make a request to populate the access_log
-				curl -sI \
-					-X GET \
-					-H "Host: ${backend_hostname}" \
-					http://127.0.0.1:${container_port_80}/ \
-				&> /dev/null
+			sleep 2
 
-				if docker exec \
-					varnish.pool-1.1.1 \
-					bash -c "[[ -s /var/log/varnish/access_log ]]"
-				then
-					break
-				fi
-
-				sleep 0.5
-				(( counter += 1 ))
-			done
-
-			docker exec \
-				varnish.pool-1.1.1 \
-				tail -n 1 \
-				/var/log/varnish/access_log \
+			docker logs \
+				--tail 1 \
+				varnish.1 \
 			| grep -qE \
-				"^.+ .+ .+ \[.+\] \"GET (http:\/\/${backend_hostname})?/ HTTP/1\.1\" 200 .+ \".+\" \".*\" (hit|miss)+$" \
+				"^.+ .+ .+ \[.+\] \"GET (http:\/\/${backend_hostname})?/ HTTP/1\.1\" 200 .+ \".+\" \".*\" (hit|miss)+\$" \
 			&> /dev/null
 
 			assert equal \
@@ -1009,7 +995,7 @@ function test_custom_configuration ()
 		end
 
 		__terminate_container \
-			varnish.pool-1.1.1 \
+			varnish.1 \
 		&> /dev/null
 	end
 
@@ -1020,33 +1006,46 @@ function test_custom_configuration ()
 function test_healthcheck ()
 {
 	local -r backend_network="bridge_t1"
-	local -r interval_seconds=0.5
+	local -r event_lag_seconds=2
+	local -r interval_seconds=1
 	local -r retries=4
-	local health_status=""
-
-	trap "__terminate_container varnish.pool-1.1.1 &> /dev/null; \
-		__destroy; \
-		exit 1" \
-		INT TERM EXIT
+	local container_id
+	local events_since_timestamp
+	local health_status
 
 	describe "Healthcheck"
-		__terminate_container \
-			varnish.pool-1.1.1 \
-		&> /dev/null
+		trap "__terminate_container varnish.1 &> /dev/null; \
+			__destroy; \
+			exit 1" \
+			INT TERM EXIT
 
 		describe "Default configuration"
+			__terminate_container \
+				varnish.1 \
+			&> /dev/null
+
 			docker run \
 				--detach \
-				--name varnish.pool-1.1.1 \
+				--name varnish.1 \
 				--network ${backend_network} \
 				jdeathe/centos-ssh-varnish:latest \
 			&> /dev/null
+
+			events_since_timestamp="$(
+				date +%s
+			)"
+
+			container_id="$(
+				docker ps \
+					--quiet \
+					--filter "name=varnish.1"
+			)"
 
 			it "Returns a valid status on starting."
 				health_status="$(
 					docker inspect \
 						--format='{{json .State.Health.Status}}' \
-						varnish.pool-1.1.1
+						varnish.1
 				)"
 
 				assert __shpec_matcher_egrep \
@@ -1054,75 +1053,96 @@ function test_healthcheck ()
 					"\"(starting|healthy|unhealthy)\""
 			end
 
-			sleep $(
-				awk \
-					-v interval_seconds="${interval_seconds}" \
-					-v startup_time="${STARTUP_TIME}" \
-					'BEGIN { print 1 + interval_seconds + startup_time; }'
-			)
-
 			it "Returns healthy after startup."
+				events_timeout="$(
+					awk \
+						-v event_lag="${event_lag_seconds}" \
+						-v interval="${interval_seconds}" \
+						-v startup_time="${STARTUP_TIME}" \
+						'BEGIN { print event_lag + startup_time + interval; }'
+				)"
+
 				health_status="$(
-					docker inspect \
-						--format='{{json .State.Health.Status}}' \
-						varnish.pool-1.1.1
+					test/health_status \
+						--container="${container_id}" \
+						--since="${events_since_timestamp}" \
+						--timeout="${events_timeout}" \
+						--monochrome \
+					2>&1
 				)"
 
 				assert equal \
 					"${health_status}" \
-					"\"healthy\""
+					"✓ healthy"
 			end
 
 			it "Returns unhealthy on failure."
-				# mysqld-wrapper failure
 				docker exec -t \
-					varnish.pool-1.1.1 \
+					varnish.1 \
 					bash -c "mv \
 						/usr/sbin/varnishd \
 						/usr/sbin/varnishd2" \
 				&& docker exec -t \
-					varnish.pool-1.1.1 \
+					varnish.1 \
 					bash -c "if [[ -n \$(pgrep -f '^/usr/sbin/varnishd ') ]]; then \
 						kill -9 \$(pgrep -f '^/usr/sbin/varnishd ')
 					fi"
 
-				sleep $(
+				events_since_timestamp="$(
+					date +%s
+				)"
+
+				events_timeout="$(
 					awk \
-						-v interval_seconds="${interval_seconds}" \
+						-v event_lag="${event_lag_seconds}" \
+						-v interval="${interval_seconds}" \
 						-v retries="${retries}" \
-						'BEGIN { print 1 + interval_seconds * retries; }'
-				)
+						'BEGIN { print (2 * event_lag) + (interval * retries); }'
+				)"
 
 				health_status="$(
-					docker inspect \
-						--format='{{json .State.Health.Status}}' \
-						varnish.pool-1.1.1
+					test/health_status \
+						--container="${container_id}" \
+						--since="$(( ${event_lag_seconds} + ${events_since_timestamp} ))" \
+						--timeout="${events_timeout}" \
+						--monochrome \
+					2>&1
 				)"
 
 				assert equal \
 					"${health_status}" \
-					"\"unhealthy\""
+					"✗ unhealthy"
 			end
 		end
 
-		__terminate_container \
-			varnish.pool-1.1.1 \
-		&> /dev/null
-
 		describe "Enable varnishncsa-wrapper"
+			__terminate_container \
+				varnish.1 \
+			&> /dev/null
+
 			docker run \
 				--detach \
-				--name varnish.pool-1.1.1 \
+				--name varnish.1 \
 				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
 				--network ${backend_network} \
 				jdeathe/centos-ssh-varnish:latest \
 			&> /dev/null
 
+			events_since_timestamp="$(
+				date +%s
+			)"
+
+			container_id="$(
+				docker ps \
+					--quiet \
+					--filter "name=varnish.1"
+			)"
+
 			it "Returns a valid status on starting."
 				health_status="$(
 					docker inspect \
 						--format='{{json .State.Health.Status}}' \
-						varnish.pool-1.1.1
+						varnish.1
 				)"
 
 				assert __shpec_matcher_egrep \
@@ -1130,45 +1150,59 @@ function test_healthcheck ()
 					"\"(starting|healthy|unhealthy)\""
 			end
 
-			sleep $(
-				awk \
-					-v interval_seconds="${interval_seconds}" \
-					-v startup_time="${STARTUP_TIME}" \
-					'BEGIN { print 1 + interval_seconds + startup_time; }'
-			)
-
 			it "Returns healthy after startup."
+				events_timeout="$(
+					awk \
+						-v event_lag="${event_lag_seconds}" \
+						-v interval="${interval_seconds}" \
+						-v startup_time="${STARTUP_TIME}" \
+						'BEGIN { print event_lag + startup_time + interval; }'
+				)"
+
 				health_status="$(
-					docker inspect \
-						--format='{{json .State.Health.Status}}' \
-						varnish.pool-1.1.1
+					test/health_status \
+						--container="${container_id}" \
+						--since="${events_since_timestamp}" \
+						--timeout="${events_timeout}" \
+						--monochrome \
+					2>&1
 				)"
 
 				assert equal \
 					"${health_status}" \
-					"\"healthy\""
+					"✓ healthy"
 			end
 		end
 
-		__terminate_container \
-			varnish.pool-1.1.1 \
-		&> /dev/null
-
 		describe "Disable all"
+			__terminate_container \
+				varnish.1 \
+			&> /dev/null
+
 			docker run \
 				--detach \
-				--name varnish.pool-1.1.1 \
+				--name varnish.1 \
 				--env VARNISH_AUTOSTART_VARNISHD_WRAPPER=false \
 				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=false \
 				--network ${backend_network} \
 				jdeathe/centos-ssh-varnish:latest \
 			&> /dev/null
 
+			events_since_timestamp="$(
+				date +%s
+			)"
+
+			container_id="$(
+				docker ps \
+					--quiet \
+					--filter "name=varnish.1"
+			)"
+
 			it "Returns a valid status on starting."
 				health_status="$(
 					docker inspect \
 						--format='{{json .State.Health.Status}}' \
-						varnish.pool-1.1.1
+						varnish.1
 				)"
 
 				assert __shpec_matcher_egrep \
@@ -1176,33 +1210,37 @@ function test_healthcheck ()
 					"\"(starting|healthy|unhealthy)\""
 			end
 
-			sleep $(
-				awk \
-					-v interval_seconds="${interval_seconds}" \
-					-v startup_time="${STARTUP_TIME}" \
-					'BEGIN { print 1 + interval_seconds + startup_time; }'
-			)
-
 			it "Returns healthy after startup."
+				events_timeout="$(
+					awk \
+						-v event_lag="${event_lag_seconds}" \
+						-v interval="${interval_seconds}" \
+						-v startup_time="${STARTUP_TIME}" \
+						'BEGIN { print event_lag + startup_time + interval; }'
+				)"
+
 				health_status="$(
-					docker inspect \
-						--format='{{json .State.Health.Status}}' \
-						varnish.pool-1.1.1
+					test/health_status \
+						--container="${container_id}" \
+						--since="${events_since_timestamp}" \
+						--timeout="${events_timeout}" \
+						--monochrome \
+					2>&1
 				)"
 
 				assert equal \
 					"${health_status}" \
-					"\"healthy\""
+					"✓ healthy"
 			end
-
-			__terminate_container \
-				varnish.pool-1.1.1 \
-			&> /dev/null
 		end
-	end
 
-	trap - \
-		INT TERM EXIT
+		__terminate_container \
+			varnish.1 \
+		&> /dev/null
+
+		trap - \
+			INT TERM EXIT
+	end
 }
 
 if [[ ! -d ${TEST_DIRECTORY} ]]; then
