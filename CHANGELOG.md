@@ -4,12 +4,13 @@
 
 Summary of release changes for Version 2.
 
-CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.1.
+CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.2.
 
 ### 2.3.0 - Unreleased
 
 - Updates `gcc` package to gcc-4.8.5-36.el7_6.1.
 - Updates source image to [2.5.1](https://github.com/jdeathe/centos-ssh/releases/tag/2.5.1).
+- Updates Varnish to [6.2.0](https://github.com/varnishcache/varnish-cache/blob/varnish-6.2.0/doc/changes.rst)
 - Updates and restructures Dockerfile.
 - Updates container naming conventions and readability of `Makefile`.
 - Updates startup time to 3 seconds.
