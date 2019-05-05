@@ -1,14 +1,10 @@
-# =============================================================================
-# jdeathe/centos-ssh-varnish
-#
-# CentOS-6, Varnish 4.1
-#
-# =============================================================================
-FROM jdeathe/centos-ssh:1.9.1
+FROM jdeathe/centos-ssh:1.10.1
 
-# -----------------------------------------------------------------------------
-# Install Varnish Cache
-# -----------------------------------------------------------------------------
+ARG RELEASE_VERSION="1.5.2"
+
+# ------------------------------------------------------------------------------
+# Base install of required packages
+# ------------------------------------------------------------------------------
 RUN rpm --rebuilddb \
 	&& rpm -iv https://packagecloud.io/varnishcache/varnish41/packages/el/6/varnish-release-4.1-4.el6.noarch.rpm/download \
 	&& yum -y install \
@@ -22,31 +18,26 @@ RUN rpm --rebuilddb \
 	&& rm -rf /var/cache/yum/* \
 	&& yum clean all
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Copy files into place
-# -----------------------------------------------------------------------------
-ADD src/usr/bin \
-	/usr/bin/
-ADD src/usr/sbin \
-	/usr/sbin/
-ADD src/opt/scmi \
-	/opt/scmi/
-ADD src/etc/services-config/supervisor/supervisord.d \
-	/etc/services-config/supervisor/supervisord.d/
-ADD src/etc/services-config/varnish/docker-default.vcl \
-	/etc/services-config/varnish/
-ADD src/etc/systemd/system \
-	/etc/systemd/system/
+# ------------------------------------------------------------------------------
+ADD src /
 
-RUN ln -sf \
-		/etc/services-config/supervisor/supervisord.d/varnishd-wrapper.conf \
-		/etc/supervisord.d/varnishd-wrapper.conf \
-	&& ln -sf \
-		/etc/services-config/supervisor/supervisord.d/varnishncsa-wrapper.conf \
-		/etc/supervisord.d/varnishncsa-wrapper.conf \
-	&& ln -sf \
-		/etc/services-config/varnish/docker-default.vcl \
-		/etc/varnish/docker-default.vcl \
+# ------------------------------------------------------------------------------
+# Provisioning
+# - Replace placeholders with values in systemd service unit template
+# - Symbolic link varnish access log file to stdout
+# - Create directory for varnishncsa PID file
+# - Set permissions
+# ------------------------------------------------------------------------------
+RUN sed -i \
+		-e "s~{{RELEASE_VERSION}}~${RELEASE_VERSION}~g" \
+		/etc/systemd/system/centos-ssh-varnish@.service \
+	&& mkdir -p \
+		/var/{lib/misc,lock/subsys,run}/varnish \
+	&& chown \
+		varnishlog:varnish \
+		/var/{lib/misc,lock/subsys,run}/varnish \
 	&& chmod 644 \
 		/etc/varnish/*.vcl \
 	&& chmod 700 \
@@ -54,34 +45,31 @@ RUN ln -sf \
 	&& chmod 750 \
 		/usr/sbin/varnishncsa-wrapper \
 	&& chgrp varnish \
-		/usr/sbin/varnishncsa-wrapper \
-	&& mkdir -p \
-		/var/run/varnish \
-	&& chown \
-		varnishlog:varnish \
-		/var/run/varnish
+		/usr/sbin/varnishncsa-wrapper
 
 EXPOSE 80 8443
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Set default environment variables
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 ENV SSH_AUTOSTART_SSHD="false" \
 	SSH_AUTOSTART_SSHD_BOOTSTRAP="false" \
+	SSH_AUTOSTART_SUPERVISOR_STDOUT="false" \
 	VARNISH_AUTOSTART_VARNISHD_WRAPPER="true" \
 	VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER="false" \
 	VARNISH_MAX_THREADS="1000" \
 	VARNISH_MIN_THREADS="50" \
+	VARNISH_OPTIONS="" \
 	VARNISH_STORAGE="file,/var/lib/varnish/varnish_storage.bin,1G" \
 	VARNISH_THREAD_TIMEOUT="120" \
 	VARNISH_TTL="120" \
 	VARNISH_VARNISHNCSA_FORMAT="%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\"" \
+	VARNISH_VARNISHNCSA_OPTIONS="" \
 	VARNISH_VCL_CONF="/etc/varnish/docker-default.vcl"
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Set image metadata
-# -----------------------------------------------------------------------------
-ARG RELEASE_VERSION="1.5.2"
+# ------------------------------------------------------------------------------
 LABEL \
 	maintainer="James Deathe <james.deathe@gmail.com>" \
 	install="docker run \
@@ -111,7 +99,7 @@ jdeathe/centos-ssh-varnish:${RELEASE_VERSION} \
 	org.deathe.description="CentOS-6 6.10 x86_64 - Varnish Cache 4.1."
 
 HEALTHCHECK \
-	--interval=0.5s \
+	--interval=1s \
 	--timeout=1s \
 	--retries=4 \
 	CMD ["/usr/bin/healthcheck"]

@@ -36,11 +36,11 @@ For cases where access to docker exec is not possible the preferred method is to
 
 ## Quick Example
 
-Run up a container named `varnish.pool-1.1.1` from the docker image `jdeathe/centos-ssh-varnish` on port 80 of your docker host. 1 backend host is defined with the IP address 172.17.8.101; this is required to identify the backend hosts from within the Varnish VCL file.
+Run up a container named `varnish.1` from the docker image `jdeathe/centos-ssh-varnish` on port 80 of your docker host. 1 backend host is defined with the IP address 172.17.8.101; this is required to identify the backend hosts from within the Varnish VCL file.
 
 ```
 $ docker run -d -t \
-  --name varnish.pool-1.1.1 \
+  --name varnish.1 \
   -p 80:80 \
   --sysctl "net.core.somaxconn=1024" \
   --add-host httpd_1:172.17.8.101 \
@@ -50,7 +50,7 @@ $ docker run -d -t \
 Now you can verify it is initialised and running successfully by inspecting the container's logs.
 
 ```
-$ docker logs varnish.pool-1.1.1
+$ docker logs varnish.1
 ```
 
 ## Instructions
@@ -64,12 +64,12 @@ In the following example the http service is bound to port 8000 and offloaded ht
 #### Using environment variables
 
 ```
-$ docker stop varnish.pool-1.1.1 && \
-  docker rm varnish.pool-1.1.1
+$ docker stop varnish.1 && \
+  docker rm varnish.1
 $ docker run \
   --detach \
   --tty \
-  --name varnish.pool-1.1.1 \
+  --name varnish.1 \
   --publish 8000:80 \
   --publish 8500:8443 \
   --sysctl "net.core.somaxconn=1024" \
@@ -88,7 +88,7 @@ $ docker run \
 Now you can verify it is initialised and running successfully by inspecting the container's logs:
 
 ```
-$ docker logs varnish.pool-1.1.1
+$ docker logs varnish.1
 ```
 
 #### Environment Variables
@@ -103,22 +103,30 @@ It may be desirable to prevent the startup of the varnishd-wrapper script. For e
 
 Controls the startup of the varnishncsa-wrapper script which is not started by default. With `VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER` set to `true` the `varnishncsa` process is started to output the Varnish in-memory logs to the log file `/var/log/varnish/access_log`. Logs are in Apache / NCSA combined log format unless altered using `VARNISH_VARNISHNCSA_FORMAT`.
 
-##### VARNISH_VCL_CONF
-
-The Varnish VCL configuration file path, (or base64 encoded string of the configuration file contents), is set using `VARNISH_VCL_CONF`. The default configuration supplied is located at the path `/etc/varnish/docker-default.vcl`.
-
-##### VARNISH_TTL
-
-The `VARNISH_TTL` can be used to set a hard minimum time to live for cached documents. The default is 120 seconds.
-
 ##### VARNISH_MIN_THREADS, VARNISH_MAX_THREADS & VARNISH_THREAD_TIMEOUT
 
 Start at least `VARNISH_MIN_THREADS` but no more than `VARNISH_MAX_THREADS` worker threads with the `VARNISH_THREAD_TIMEOUT` idle timeout.
+
+##### VARNISH_OPTIONS
+
+Use `VARNISH_OPTIONS` to set other `varnishd` options.
 
 ##### VARNISH_STORAGE
 
 Use `VARNISH_STORAGE` to specify the storage backend. See the [varnishd documentation](https://varnish-cache.org/docs/4.1/reference/varnishd.html#storage-backend) for the types and parameters available. The default is a file type backend but it is recommended to use malloc if there is enough RAM available.
 
+##### VARNISH_TTL
+
+The `VARNISH_TTL` can be used to set a hard minimum time to live for cached documents. The default is 120 seconds.
+
 ##### VARNISH_VARNISHNCSA_FORMAT
 
 When `VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER` is set to `true` then `VARNISH_VARNISHNCSA_FORMAT` can be used to set the output log [format string](https://varnish-cache.org/docs/6.0/reference/varnishncsa.html#format).
+
+##### VARNISH_VARNISHNCSA_OPTIONS
+
+Use `VARNISH_VARNISHNCSA_OPTIONS` to set other `varnishncsa` options.
+
+##### VARNISH_VCL_CONF
+
+The Varnish VCL configuration file path, (or base64 encoded string of the configuration file contents), is set using `VARNISH_VCL_CONF`. The default configuration supplied is located at the path `/etc/varnish/docker-default.vcl`.
