@@ -6,7 +6,7 @@ Summary of release changes for Version 1.
 
 CentOS-6 6.10 x86_64 - Varnish Cache 4.1.
 
-### 1.6.0 - Unreleased
+### 1.6.0 - 2019-05-06
 
 - Updates source image to [1.10.1](https://github.com/jdeathe/centos-ssh/releases/tag/1.10.1).
 - Updates Varnish to version [4.1.11](https://github.com/varnishcache/varnish-cache/blob/varnish-4.1.11/doc/changes.rst).
