@@ -9,6 +9,7 @@ CentOS-6 6.10 x86_64 - Varnish Cache 4.1.
 ### 1.6.0 - Unreleased
 
 - Updates source image to [1.10.1](https://github.com/jdeathe/centos-ssh/releases/tag/1.10.1).
+- Updates Varnish to version [4.1.11](https://github.com/varnishcache/varnish-cache/blob/varnish-4.1.11/doc/changes.rst).
 - Updates and restructures Dockerfile.
 - Updates container naming conventions and readability of `Makefile`.
 - Updates startup time to 3 seconds.

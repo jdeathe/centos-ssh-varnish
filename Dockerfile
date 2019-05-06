@@ -5,13 +5,24 @@ ARG RELEASE_VERSION="1.5.2"
 # ------------------------------------------------------------------------------
 # Base install of required packages
 # ------------------------------------------------------------------------------
-RUN rpm --rebuilddb \
-	&& rpm -iv https://packagecloud.io/varnishcache/varnish41/packages/el/6/varnish-release-4.1-4.el6.noarch.rpm/download \
+RUN { printf -- \
+		'[%s]\nname=%s\nbaseurl=%s\nrepo_gpgcheck=%s\ngpgcheck=%s\nenabled=%s\ngpgkey=%s\nsslverify=%s\nsslcacert=%s\nmetadata_expire=%s\n' \
+		'varnishcache_varnish41' \
+		'varnishcache_varnish41' \
+		'https://packagecloud.io/varnishcache/varnish41/el/6/$basearch' \
+		'1' \
+		'0' \
+		'1' \
+		'https://packagecloud.io/varnishcache/varnish41/gpgkey' \
+		'1' \
+		'/etc/pki/tls/certs/ca-bundle.crt' \
+		'300'; \
+	} > /etc/yum.repos.d/varnishcache_varnish41.repo \
 	&& yum -y install \
 		--setopt=tsflags=nodocs \
 		--disableplugin=fastestmirror \
 		gcc-4.4.7-23.el6 \
-		varnish-4.1.10-1.el6 \
+		varnish-4.1.11-1.el6 \
 	&& yum versionlock add \
 		varnish \
 		gcc \
