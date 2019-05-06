@@ -10,7 +10,7 @@ CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.2.
 
 - Updates `gcc` package to gcc-4.8.5-36.el7_6.1.
 - Updates source image to [2.5.1](https://github.com/jdeathe/centos-ssh/releases/tag/2.5.1).
-- Updates Varnish to [6.2.0](https://github.com/varnishcache/varnish-cache/blob/varnish-6.2.0/doc/changes.rst)
+- Updates Varnish to [6.2.0](https://github.com/varnishcache/varnish-cache/blob/varnish-6.2.0/doc/changes.rst).
 - Updates and restructures Dockerfile.
 - Updates container naming conventions and readability of `Makefile`.
 - Updates startup time to 3 seconds.
@@ -52,14 +52,14 @@ CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.2.
 
 ### 2.2.0 - 2018-10-09
 
-- Updates Varnish to [6.1.0](https://github.com/varnishcache/varnish-cache/blob/varnish-6.1.0/doc/changes.rst)
+- Updates Varnish to [6.1.0](https://github.com/varnishcache/varnish-cache/blob/varnish-6.1.0/doc/changes.rst).
 - Adds lockfile to ensure varnishd is started before running varnishncsa.
 - Adds failure messages to healthcheck script.
 
 ### 2.1.0 - 2018-10-01
 
 - Updates source image to [2.4.0](https://github.com/jdeathe/centos-ssh/releases/tag/2.4.0).
-- Updates Varnish to [6.0.1](https://github.com/varnishcache/varnish-cache/blob/varnish-6.0.1/doc/changes.rst)
+- Updates Varnish to [6.0.1](https://github.com/varnishcache/varnish-cache/blob/varnish-6.0.1/doc/changes.rst).
 - Updates pattern for static assets to include web fonts and SVG images and remove SWF.
 - Removes response header that indicate Varnish version.
 - Adds `VARNISH_AUTOSTART_VARNISHD_WRAPPER` for disabling varnishd autostart.
@@ -68,4 +68,4 @@ CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.2.
 
 ### 2.0.0 - 2018-06-22
 
-- Initial release
+- Initial release.
