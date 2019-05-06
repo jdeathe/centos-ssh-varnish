@@ -112,7 +112,7 @@ jdeathe/centos-ssh-varnish:${RELEASE_VERSION} \
 HEALTHCHECK \
 	--interval=1s \
 	--timeout=1s \
-	--retries=4 \
+	--retries=5 \
 	CMD ["/usr/bin/healthcheck"]
 
 CMD ["/usr/bin/supervisord", "--configuration=/etc/supervisord.conf"]

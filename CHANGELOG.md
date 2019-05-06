@@ -13,8 +13,8 @@ CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.2.
 - Updates Varnish to [6.2.0](https://github.com/varnishcache/varnish-cache/blob/varnish-6.2.0/doc/changes.rst).
 - Updates and restructures Dockerfile.
 - Updates container naming conventions and readability of `Makefile`.
-- Updates startup time to 3 seconds.
-- Updates healthcheck retries to 4.
+- Updates startup time to 4 seconds.
+- Updates healthcheck retries to 5.
 - Updates default VCL excluding several parts already defined in `builtin.vcl`.
 - Fixes issue with unexpected published port in run templates when `DOCKER_PORT_MAP_TCP_80` or `DOCKER_PORT_MAP_TCP_8443` is set to an empty string or 0.
 - Fixes binary paths in systemd unit files for compatibility with both EL and Ubuntu hosts.
