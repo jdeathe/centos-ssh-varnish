@@ -7,13 +7,13 @@ ARG RELEASE_VERSION="2.2.1"
 # ------------------------------------------------------------------------------
 RUN { printf -- \
 		'[%s]\nname=%s\nbaseurl=%s\nrepo_gpgcheck=%s\ngpgcheck=%s\nenabled=%s\ngpgkey=%s\nsslverify=%s\nsslcacert=%s\nmetadata_expire=%s\n' \
-		'varnishcache_varnish61' \
-		'varnishcache_varnish61' \
-		'https://packagecloud.io/varnishcache/varnish61/el/7/$basearch' \
+		'varnishcache_varnish62' \
+		'varnishcache_varnish62' \
+		'https://packagecloud.io/varnishcache/varnish62/el/7/$basearch' \
 		'1' \
 		'0' \
 		'1' \
-		'https://packagecloud.io/varnishcache/varnish61/gpgkey' \
+		'https://packagecloud.io/varnishcache/varnish62/gpgkey' \
 		'1' \
 		'/etc/pki/tls/certs/ca-bundle.crt' \
 		'300'; \
@@ -22,7 +22,7 @@ RUN { printf -- \
 		--setopt=tsflags=nodocs \
 		--disableplugin=fastestmirror \
 		gcc-4.8.5-36.el7_6.1 \
-		varnish-6.1.1-1.el7 \
+		varnish-6.2.0-1.el7 \
 	&& yum versionlock add \
 		varnish \
 		gcc \
@@ -107,7 +107,7 @@ jdeathe/centos-ssh-varnish:${RELEASE_VERSION} \
 	org.deathe.license="MIT" \
 	org.deathe.vendor="jdeathe" \
 	org.deathe.url="https://github.com/jdeathe/centos-ssh-varnish" \
-	org.deathe.description="CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.1."
+	org.deathe.description="CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.2."
 
 HEALTHCHECK \
 	--interval=1s \
