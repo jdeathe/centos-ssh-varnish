@@ -3,24 +3,24 @@ centos-ssh-varnish
 
 Docker Image including:
 - CentOS-6 6.10 x86_64 and Varnish Cache 4.1.
-- CentOS-7 7.5.1804 x86_64 and Varnish Cache 6.1.
+- CentOS-7 7.5.1804 x86_64 and Varnish Cache 6.2.
 
 ## Overview & links
 
-- `centos-7`, `centos-7-2.2.1`, `2.2.1` [(centos-7/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-7/Dockerfile)
-- `centos-6`, `centos-6-1.5.2`, `1.5.2` [(centos-6/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/Dockerfile)
+- `centos-7`, `centos-7-2.3.0`, `2.3.0` [(centos-7/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-7/Dockerfile)
+- `centos-6`, `centos-6-1.6.0`, `1.6.0` [(centos-6/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/Dockerfile)
 
 #### centos-6
 
-The latest CentOS-6 based release can be pulled from the `centos-6` Docker tag. It is recommended to select a specific release tag - the convention is `centos-6-1.5.2`or `1.5.2` for the [1.5.2](https://github.com/jdeathe/centos-ssh-varnish/tree/1.5.2) release tag.
+The latest CentOS-6 based release can be pulled from the `centos-6` Docker tag. It is recommended to select a specific release tag - the convention is `centos-6-1.6.0`or `1.6.0` for the [1.6.0](https://github.com/jdeathe/centos-ssh-varnish/tree/1.6.0) release tag.
 
 #### centos-7
 
-The latest CentOS-7 based release can be pulled from the `centos-7` Docker tag. It is recommended to select a specific release tag - the convention is `centos-7-2.2.1`or `2.2.1` for the [2.2.1](https://github.com/jdeathe/centos-ssh-varnish/tree/2.2.1) release tag.
+The latest CentOS-7 based release can be pulled from the `centos-7` Docker tag. It is recommended to select a specific release tag - the convention is `centos-7-2.3.0`or `2.3.0` for the [2.3.0](https://github.com/jdeathe/centos-ssh-varnish/tree/2.3.0) release tag.
 
 Included in the build are the [SCL](https://www.softwarecollections.org/), [EPEL](http://fedoraproject.org/wiki/EPEL) and [IUS](https://ius.io) repositories. Installed packages include [OpenSSH](http://www.openssh.com/portable.html) secure shell, [vim-minimal](http://www.vim.org/), are installed along with python-setuptools, [supervisor](http://supervisord.org/) and [supervisor-stdout](https://github.com/coderanger/supervisor-stdout).
 
-Supervisor is used to start the varnishd (and optionally the sshd) daemon when a docker container based on this image is run. To enable simple viewing of stdout for the service's subprocess, supervisor-stdout is included. This allows you to see output from the supervisord controlled subprocesses with `docker logs {docker-container-name}`.
+Supervisor is used to start the varnishd (and optionally the varnishncsa or sshd) daemon when a docker container based on this image is run.
 
 If enabling and configuring SSH access, it is by public key authentication and, by default, the [Vagrant](http://www.vagrantup.com/) [insecure private key](https://github.com/mitchellh/vagrant/blob/master/keys/vagrant) is required.
 
@@ -36,21 +36,21 @@ For cases where access to docker exec is not possible the preferred method is to
 
 ## Quick Example
 
-Run up a container named `varnish.pool-1.1.1` from the docker image `jdeathe/centos-ssh-varnish` on port 80 of your docker host. 1 backend host is defined with the IP address 172.17.8.101; this is required to identify the backend hosts from within the Varnish VCL file.
+Run up a container named `varnish.1` from the docker image `jdeathe/centos-ssh-varnish` on port 80 of your docker host. 1 backend host is defined with the IP address 172.17.8.101; this is required to identify the backend hosts from within the Varnish VCL file.
 
 ```
 $ docker run -d -t \
-  --name varnish.pool-1.1.1 \
+  --name varnish.1 \
   -p 80:80 \
   --sysctl "net.core.somaxconn=1024" \
   --add-host httpd_1:172.17.8.101 \
-  jdeathe/centos-ssh-varnish:1.5.2
+  jdeathe/centos-ssh-varnish:1.6.0
 ```
 
 Now you can verify it is initialised and running successfully by inspecting the container's logs.
 
 ```
-$ docker logs varnish.pool-1.1.1
+$ docker logs varnish.1
 ```
 
 ## Instructions
@@ -64,12 +64,12 @@ In the following example the http service is bound to port 8000 and offloaded ht
 #### Using environment variables
 
 ```
-$ docker stop varnish.pool-1.1.1 && \
-  docker rm varnish.pool-1.1.1
+$ docker stop varnish.1 && \
+  docker rm varnish.1
 $ docker run \
   --detach \
   --tty \
-  --name varnish.pool-1.1.1 \
+  --name varnish.1 \
   --publish 8000:80 \
   --publish 8500:8443 \
   --sysctl "net.core.somaxconn=1024" \
@@ -82,13 +82,13 @@ $ docker run \
   --env "VARNISH_MAX_THREADS=2000" \
   --env "VARNISH_MIN_THREADS=100" \
   --add-host httpd_1:172.17.8.101 \
-  jdeathe/centos-ssh-varnish:1.5.2
+  jdeathe/centos-ssh-varnish:1.6.0
 ```
 
 Now you can verify it is initialised and running successfully by inspecting the container's logs:
 
 ```
-$ docker logs varnish.pool-1.1.1
+$ docker logs varnish.1
 ```
 
 #### Environment Variables
@@ -103,22 +103,30 @@ It may be desirable to prevent the startup of the varnishd-wrapper script. For e
 
 Controls the startup of the varnishncsa-wrapper script which is not started by default. With `VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER` set to `true` the `varnishncsa` process is started to output the Varnish in-memory logs to the log file `/var/log/varnish/access_log`. Logs are in Apache / NCSA combined log format unless altered using `VARNISH_VARNISHNCSA_FORMAT`.
 
-##### VARNISH_VCL_CONF
-
-The Varnish VCL configuration file path, (or base64 encoded string of the configuration file contents), is set using `VARNISH_VCL_CONF`. The default configuration supplied is located at the path `/etc/varnish/docker-default.vcl`.
-
-##### VARNISH_TTL
-
-The `VARNISH_TTL` can be used to set a hard minimum time to live for cached documents. The default is 120 seconds.
-
 ##### VARNISH_MIN_THREADS, VARNISH_MAX_THREADS & VARNISH_THREAD_TIMEOUT
 
 Start at least `VARNISH_MIN_THREADS` but no more than `VARNISH_MAX_THREADS` worker threads with the `VARNISH_THREAD_TIMEOUT` idle timeout.
+
+##### VARNISH_OPTIONS
+
+Use `VARNISH_OPTIONS` to set other `varnishd` options.
 
 ##### VARNISH_STORAGE
 
 Use `VARNISH_STORAGE` to specify the storage backend. See the [varnishd documentation](https://varnish-cache.org/docs/4.1/reference/varnishd.html#storage-backend) for the types and parameters available. The default is a file type backend but it is recommended to use malloc if there is enough RAM available.
 
+##### VARNISH_TTL
+
+The `VARNISH_TTL` can be used to set a hard minimum time to live for cached documents. The default is 120 seconds.
+
 ##### VARNISH_VARNISHNCSA_FORMAT
 
 When `VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER` is set to `true` then `VARNISH_VARNISHNCSA_FORMAT` can be used to set the output log [format string](https://varnish-cache.org/docs/6.0/reference/varnishncsa.html#format).
+
+##### VARNISH_VARNISHNCSA_OPTIONS
+
+Use `VARNISH_VARNISHNCSA_OPTIONS` to set other `varnishncsa` options.
+
+##### VARNISH_VCL_CONF
+
+The Varnish VCL configuration file path, (or base64 encoded string of the configuration file contents), is set using `VARNISH_VCL_CONF`. The default configuration supplied is located at the path `/etc/varnish/docker-default.vcl`.

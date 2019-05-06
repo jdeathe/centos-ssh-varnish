@@ -1,15 +1,39 @@
 
 # Handle incrementing the docker host port for instances unless a port range is defined.
 DOCKER_PUBLISH=
-if [[ ${DOCKER_PORT_MAP_TCP_80} != NULL ]]; then
-	if grep -qE '^([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}:)?[0-9]*$' <<< "${DOCKER_PORT_MAP_TCP_80}" \
-		&& grep -qE '^.+\.([0-9]+)\.([0-9]+)$' <<< "${DOCKER_NAME}"; then
+if [[ ${DOCKER_PORT_MAP_TCP_80} != NULL ]]
+then
+	if grep -qE \
+			'^([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}:)?[1-9][0-9]*$' \
+			<<< "${DOCKER_PORT_MAP_TCP_80}" \
+		&& grep -qE \
+			'^.+\.[0-9]+(\.[0-9]+)?$' \
+			<<< "${DOCKER_NAME}"
+	then
 		printf -v \
 			DOCKER_PUBLISH \
 			-- '%s --publish %s%s:80' \
 			"${DOCKER_PUBLISH}" \
-			"$(grep -o '^[0-9\.]*:' <<< "${DOCKER_PORT_MAP_TCP_80}")" \
-			"$(( $(grep -o '[0-9]*$' <<< "${DOCKER_PORT_MAP_TCP_80}") + $(sed 's~\.[0-9]*$~~' <<< "${DOCKER_NAME}" | awk -F. '{ print $NF; }') - 1 ))"
+			"$(
+				grep -o \
+					'^[0-9\.]*:' \
+					<<< "${DOCKER_PORT_MAP_TCP_80}"
+			)" \
+			"$(( 
+				$(
+					grep -oE \
+						'[0-9]+$' \
+						<<< "${DOCKER_PORT_MAP_TCP_80}"
+				) \
+				+ $(
+					grep -oE \
+						'([0-9]+)(\.[0-9]+)?$' \
+						<<< "${DOCKER_NAME}" \
+					| awk -F. \
+						'{ print $1; }'
+				) \
+				- 1
+			))"
 	else
 		printf -v \
 			DOCKER_PUBLISH \
@@ -19,15 +43,39 @@ if [[ ${DOCKER_PORT_MAP_TCP_80} != NULL ]]; then
 	fi
 fi
 
-if [[ ${DOCKER_PORT_MAP_TCP_8443} != NULL ]]; then
-	if grep -qE '^([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}:)?[0-9]*$' <<< "${DOCKER_PORT_MAP_TCP_8443}" \
-		&& grep -qE '^.+\.([0-9]+)\.([0-9]+)$' <<< "${DOCKER_NAME}"; then
+if [[ ${DOCKER_PORT_MAP_TCP_8443} != NULL ]]
+then
+	if grep -qE \
+			'^([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}:)?[1-9][0-9]*$' \
+			<<< "${DOCKER_PORT_MAP_TCP_8443}" \
+		&& grep -qE \
+			'^.+\.[0-9]+(\.[0-9]+)?$' \
+			<<< "${DOCKER_NAME}"
+	then
 		printf -v \
 			DOCKER_PUBLISH \
 			-- '%s --publish %s%s:8443' \
 			"${DOCKER_PUBLISH}" \
-			"$(grep -o '^[0-9\.]*:' <<< "${DOCKER_PORT_MAP_TCP_8443}")" \
-			"$(( $(grep -o '[0-9]*$' <<< "${DOCKER_PORT_MAP_TCP_8443}") + $(sed 's~\.[0-9]*$~~' <<< "${DOCKER_NAME}" | awk -F. '{ print $NF; }') - 1 ))"
+			"$(
+				grep -o \
+					'^[0-9\.]*:' \
+					<<< "${DOCKER_PORT_MAP_TCP_8443}"
+			)" \
+			"$(( 
+				$(
+					grep -oE \
+						'[0-9]+$' \
+						<<< "${DOCKER_PORT_MAP_TCP_8443}"
+				) \
+				+ $(
+					grep -oE \
+						'([0-9]+)(\.[0-9]+)?$' \
+						<<< "${DOCKER_NAME}" \
+					| awk -F. \
+						'{ print $1; }'
+				) \
+				- 1
+			))"
 	else
 		printf -v \
 			DOCKER_PUBLISH \
@@ -51,9 +99,11 @@ DOCKER_CONTAINER_PARAMETERS="--tty \
 --env \"VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=${VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER}\" \
 --env \"VARNISH_MAX_THREADS=${VARNISH_MAX_THREADS}\" \
 --env \"VARNISH_MIN_THREADS=${VARNISH_MIN_THREADS}\" \
+--env \"VARNISH_OPTIONS=${VARNISH_OPTIONS}\" \
 --env \"VARNISH_STORAGE=${VARNISH_STORAGE}\" \
 --env \"VARNISH_THREAD_TIMEOUT=${VARNISH_THREAD_TIMEOUT}\" \
 --env \"VARNISH_TTL=${VARNISH_TTL}\" \
 --env \"VARNISH_VARNISHNCSA_FORMAT=${VARNISH_VARNISHNCSA_FORMAT}\" \
+--env \"VARNISH_VARNISHNCSA_OPTIONS=${VARNISH_VARNISHNCSA_OPTIONS}\" \
 --env \"VARNISH_VCL_CONF=${VARNISH_VCL_CONF}\" \
 ${DOCKER_PUBLISH}"
