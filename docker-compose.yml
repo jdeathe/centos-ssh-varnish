@@ -32,7 +32,7 @@ services:
       context: "."
       dockerfile: "Dockerfile"
     depends_on:
-      - "httpd_1"
+      - "apache-php"
     environment:
       VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER: "true"
       VARNISH_MAX_THREADS: "${VARNISH_MAX_THREADS}"
@@ -65,7 +65,7 @@ services:
         soft: 524288
         hard: 1048576
       nproc: 65535
-  httpd_1:
+  apache-php:
     depends_on:
       - "memcached"
     environment:
@@ -83,7 +83,6 @@ services:
       tier2:
         aliases:
           - "httpd_1"
-          - "web_1"
     restart: "always"
     sysctls:
       net.core.somaxconn: "1024"
