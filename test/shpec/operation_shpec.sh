@@ -1,4 +1,4 @@
-readonly STARTUP_TIME=3
+readonly STARTUP_TIME=4
 readonly TEST_DIRECTORY="test"
 
 # These should ideally be a static value but hosts might be using this port so 
@@ -1008,7 +1008,7 @@ function test_healthcheck ()
 	local -r backend_network="bridge_t1"
 	local -r event_lag_seconds=2
 	local -r interval_seconds=1
-	local -r retries=4
+	local -r retries=5
 	local container_id
 	local events_since_timestamp
 	local health_status
