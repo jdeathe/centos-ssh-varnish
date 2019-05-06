@@ -6,7 +6,7 @@ Summary of release changes for Version 2.
 
 CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.2.
 
-### 2.3.0 - Unreleased
+### 2.3.0 - 2019-05-06
 
 - Updates `gcc` package to gcc-4.8.5-36.el7_6.1.
 - Updates source image to [2.5.1](https://github.com/jdeathe/centos-ssh/releases/tag/2.5.1).
