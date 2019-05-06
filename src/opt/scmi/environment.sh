@@ -27,7 +27,7 @@ NO_CACHE="${NO_CACHE:-false}"
 DIST_PATH="${DIST_PATH:-./dist}"
 
 # Number of seconds expected to complete container startup including bootstrap.
-STARTUP_TIME="${STARTUP_TIME:-3}"
+STARTUP_TIME="${STARTUP_TIME:-4}"
 
 # Docker --sysctl settings
 SYSCTL_NET_CORE_SOMAXCONN="${SYSCTL_NET_CORE_SOMAXCONN:-1024}"
