@@ -1,6 +1,6 @@
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Constants
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 readonly SERVICE_UNIT_ENVIRONMENT_KEYS="
  DOCKER_CONTAINER_OPTS
  DOCKER_IMAGE_PACKAGE_PATH
@@ -17,10 +17,12 @@ readonly SERVICE_UNIT_ENVIRONMENT_KEYS="
  VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER
  VARNISH_MAX_THREADS
  VARNISH_MIN_THREADS
+ VARNISH_OPTIONS
  VARNISH_STORAGE
  VARNISH_THREAD_TIMEOUT
  VARNISH_TTL
  VARNISH_VARNISHNCSA_FORMAT
+ VARNISH_VARNISHNCSA_OPTIONS
  VARNISH_VCL_CONF
 "
 
@@ -30,7 +32,7 @@ readonly SERVICE_UNIT_REGISTER_ENVIRONMENT_KEYS="
  REGISTER_UPDATE_INTERVAL
 "
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Variables
-# -----------------------------------------------------------------------------
-SERVICE_UNIT_INSTALL_TIMEOUT=${SERVICE_UNIT_INSTALL_TIMEOUT:-5}
+# ------------------------------------------------------------------------------
+SERVICE_UNIT_INSTALL_TIMEOUT="${SERVICE_UNIT_INSTALL_TIMEOUT:-7}"

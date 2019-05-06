@@ -111,10 +111,6 @@ sub vcl_hit {
 
 sub vcl_deliver {
 	unset resp.http.Via;
-
-	if (resp.status >= 400) {
-		return (synth(resp.status));
-	}
 }
 
 sub vcl_synth {

@@ -1,39 +1,56 @@
 #!/usr/bin/env bash
 
-if [[ ${VARNISH_AUTOSTART_VARNISHD_WRAPPER} == false ]] \
-	&& [[ ${VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER} == false ]]
-then
-	exit 0
-fi
+set -e
 
-# varnishd-wrapper
-if [[ ${VARNISH_AUTOSTART_VARNISHD_WRAPPER} == true ]] \
-	&& ! ps axo command \
-	| grep -qE '^/usr/sbin/varnishd '
-then
-	printf -- \
-		"Process varnishd not running."
-	exit 1
-fi
+function main ()
+{
+	if ! ps axo command \
+		| grep -qE '^/usr/bin/python /usr/bin/supervisord'
+	then
+		>&2 printf -- \
+			'%s\n' \
+			"supervisord not running."
+		exit 1
+	fi
 
-# ready status
-if [[ ${VARNISH_AUTOSTART_VARNISHD_WRAPPER} == true ]] \
-	&& ! varnishadm vcl.show -v boot \
-	&> /dev/null
-then
-	printf -- \
-		"Varnish not booted."
-	exit 1
-fi
+	if [[ ${VARNISH_AUTOSTART_VARNISHD_WRAPPER} == false ]] \
+		&& [[ ${VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER} == false ]]
+	then
+		exit 0
+	fi
 
-# varnishncsa-wrapper
-if [[ ${VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER} == true ]] \
-	&& ! ps axo command \
-	| grep -qE '^/usr/bin/varnishncsa '
-then
-	printf -- \
-		"Process varnishncsa not running."
-	exit 1
-fi
+	# varnishd-wrapper
+	if [[ ${VARNISH_AUTOSTART_VARNISHD_WRAPPER} == true ]] \
+		&& ! ps axo command \
+		| grep -qE '^/usr/sbin/varnishd '
+	then
+		>&2 printf -- \
+			'%s\n' \
+			"varnishd not running."
+		exit 1
+	fi
 
-exit 0
+	# ready status
+	if [[ ${VARNISH_AUTOSTART_VARNISHD_WRAPPER} == true ]] \
+		&& ! varnishadm vcl.show -v boot \
+		&> /dev/null
+	then
+		>&2 printf -- \
+			'%s\n' \
+			"varnishd not booted."
+		exit 1
+	fi
+
+	# varnishncsa-wrapper
+	if [[ ${VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER} == true ]] \
+		&& ! ps axo command \
+		| grep -qE '^/usr/bin/varnishncsa '
+	then
+		>&2 printf -- \
+			'%s\n' \
+			"varnishncsa not running."
+		exit 1
+	fi
+}
+
+main "${@}"
