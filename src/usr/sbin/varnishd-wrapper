@@ -38,7 +38,7 @@ function __get_options ()
 		__get_varnish_options
 	)"}"
 	local -r storage="${2:-"$(
-		__get_varnish_options
+		__get_varnish_storage
 	)"}"
 	local -r thread_timeout="${6:-"$(
 		__get_varnish_thread_timeout

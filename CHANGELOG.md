@@ -15,6 +15,7 @@ Summary of release changes.
 - Updates varnishd supervisord configuration file/priority to `80-varnishd-wrapper.conf`/`80`.
 - Updates varnishncsa supervisord configuration file/priority to `50-varnishncsa-wrapper.conf`/`50`.
 - Fixes docker host connection status check in Makefile.
+- Fixes error when restarting/reloading varnishd.
 - Adds `inspect`, `reload` and `top` Makefile targets.
 - Adds improved `clean` Makefile target; includes exited containers and dangling images.
 - Adds `SYSTEM_TIMEZONE` handling to Makefile, scmi, systemd unit and docker-compose templates.
