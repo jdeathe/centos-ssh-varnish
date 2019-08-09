@@ -67,6 +67,14 @@ function __get_options ()
 		"${options}"
 }
 
+function __get_proxy ()
+{
+	printf -- \
+		'%s -n %s' \
+		"${nice}" \
+		"${niceness}"
+}
+
 function __get_timer_total ()
 {
 	local -r timer_end="$(
@@ -197,6 +205,26 @@ function __get_varnish_vcl_conf_path ()
 	printf -- '%s' "${value}"
 }
 
+function __get_varnishd_version ()
+{
+	local semantic_version
+
+	if ! command -v varnishd &> /dev/null
+	then
+		>&2 printf -- \
+			'ERROR: varnishd binary not installed\n'
+		return 1
+	fi
+
+	semantic_version="$(
+		2>&1 varnishd -V \
+		| grep -E -o 'varnish-\/[0-9]+\.[0-9]+\.[0-9]+' \
+		| awk -F'-' '{ print $NF; }'
+	)"
+
+	printf -- '%s' "${semantic_version}"
+}
+
 function __is_valid_positive_integer ()
 {
 	local -r positive_integer='^[0-9]+$'
@@ -268,26 +296,6 @@ function __is_valid_varnish_ttl ()
 	__is_valid_positive_integer "${@}"
 }
 
-function __get_varnishd_version ()
-{
-	local semantic_version
-
-	if ! command -v varnishd &> /dev/null
-	then
-		>&2 printf -- \
-			'ERROR: varnishd binary not installed\n'
-		return 1
-	fi
-
-	semantic_version="$(
-		2>&1 varnishd -V \
-		| grep -E -o 'varnish-\/[0-9]+\.[0-9]+\.[0-9]+' \
-		| awk -F'-' '{ print $NF; }'
-	)"
-
-	printf -- '%s' "${semantic_version}"
-}
-
 function __populate_psk_secret_file ()
 {
 	local -r file_path="${1:-/etc/varnish/secret}"
@@ -301,7 +309,8 @@ function __populate_psk_secret_file ()
 		if [[ ${verbose} == true ]]
 		then
 			printf -- \
-				'INFO: Populating Varnish PSK secret file\n'
+				'INFO: %s populating PSK secret file\n' \
+				"${0##*/}"
 		fi
 
 		dd \
@@ -344,7 +353,8 @@ function __set_varnish_vcl_conf ()
 		if [[ ! ${value} =~ ${pattern_plain_text} ]]
 		then
 			>&2 printf -- \
-				'ERROR: Invalid VCL\n'
+				'ERROR: %s invalid VCL\n'
+				"${0##*/}"
 			exit 1
 		fi
 
@@ -373,7 +383,8 @@ function __test_varnish_vcl_conf ()
 		set -e
 
 		>&2 printf -- \
-			'ERROR: Invalid VCL\n'
+			'ERROR: %s invalid VCL\n' \
+			"${0##*/}"
 		exit 1
 	fi
 }
@@ -390,6 +401,7 @@ function main ()
 	)"
 
 	local options
+	local proxy
 	local timer_total
 	local varnish_max_threads
 	local varnish_min_threads
@@ -400,7 +412,6 @@ function main ()
 	local varnish_vcl_conf
 	local verbose="false"
 
-	# Parse options
 	while [[ "${#}" -gt 0 ]]
 	do
 		case "${1}" in
@@ -411,7 +422,7 @@ function main ()
 		esac
 	done
 
-	if [[ -e ${lock_file} ]]
+	if [[ -f ${lock_file} ]]
 	then
 		>&2 printf -- \
 			'ERROR: %s lock detected - aborting\n' \
@@ -424,7 +435,7 @@ function main ()
 	__create_lock
 
 	if [[ ${verbose} == true ]] \
-		&& [[ ! -e ${state_file} ]]
+		&& [[ ! -f ${state_file} ]]
 	then
 		varnish_max_threads="$(
 			__get_varnish_max_threads
@@ -463,6 +474,9 @@ function main ()
 				"${varnish_thread_timeout}" \
 				"${varnish_options}"
 		)"
+		proxy="$(
+			__get_proxy
+		)"
 
 		timer_total="$(
 			__get_timer_total \
@@ -490,12 +504,10 @@ function main ()
 		options="$(
 			__get_options
 		)"
+		proxy="$(
+			__get_proxy
+		)"
 	fi
-
-	__create_state
-	__cleanup
-	trap - \
-		INT TERM EXIT
 
 	if [[ ${verbose} == true ]]
 	then
@@ -505,8 +517,13 @@ function main ()
 			"${bin##*/}"
 	fi
 
-	exec ${nice} \
-		-n ${niceness} \
+	__create_state
+	__cleanup
+	trap - \
+		INT TERM EXIT
+
+	exec \
+		${proxy} \
 		${bin} \
 		${options}
 }

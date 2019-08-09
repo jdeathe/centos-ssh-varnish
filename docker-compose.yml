@@ -34,7 +34,7 @@ services:
     depends_on:
       - "apache-php"
     environment:
-      VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER: "true"
+      ENABLE_VARNISHNCSA_WRAPPER: "true"
       VARNISH_MAX_THREADS: "${VARNISH_MAX_THREADS}"
       VARNISH_MIN_THREADS: "${VARNISH_MIN_THREADS}"
       VARNISH_OPTIONS: "${VARNISH_OPTIONS}"
@@ -78,7 +78,7 @@ services:
       APACHE_SERVER_NAME: "www.app.local"
       PHP_OPTIONS_SESSION_SAVE_HANDLER: "memcached"
       PHP_OPTIONS_SESSION_SAVE_PATH: "memcached:11211"
-    image: "jdeathe/centos-ssh-apache-php:3.2.0"
+    image: "jdeathe/centos-ssh-apache-php:3.3.2"
     networks:
       tier2:
         aliases:
@@ -92,7 +92,7 @@ services:
     environment:
       MEMCACHED_CACHESIZE: "32"
       MEMCACHED_MAXCONN: "1024"
-    image: "jdeathe/centos-ssh-memcached:2.2.1"
+    image: "jdeathe/centos-ssh-memcached:2.3.0"
     networks:
       - "tier2"
     restart: "always"

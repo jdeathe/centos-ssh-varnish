@@ -72,6 +72,7 @@ sub vcl_recv {
 		std.port(local.ip) == 80) {
 		# Port 80
 		set req.http.X-Forwarded-Port = "80";
+		set req.http.X-Forwarded-Proto = "http";
 		set req.backend_hint = director_http.backend();
 	} else {
 		# Reject unexpected ports
