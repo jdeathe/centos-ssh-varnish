@@ -54,7 +54,7 @@ function __get_proxy ()
 function __get_timer_total ()
 {
 	local -r timer_end="$(
-		date +%s.%N
+		date -u +%s.%N
 	)"
 	local -r timer_start="${1}"
 
@@ -106,7 +106,7 @@ function main ()
 	local -r prerequisite_timeout="4"
 	local -r state_file="/var/lib/misc/varnish/varnishncsa-wrapper"
 	local -r timer_start="$(
-		date +%s.%N
+		date -u +%s.%N
 	)"
 
 	local options
