@@ -32,6 +32,7 @@ ULIMIT_NPROC ?= 9223372036854775807
 # ------------------------------------------------------------------------------
 ENABLE_VARNISHD_WRAPPER ?= true
 ENABLE_VARNISHNCSA_WRAPPER ?= false
+SYSTEM_TIMEZONE ?= UTC
 VARNISH_MAX_THREADS ?= 1000
 VARNISH_MIN_THREADS ?= 50
 VARNISH_OPTIONS ?=
