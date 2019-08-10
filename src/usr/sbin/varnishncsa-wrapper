@@ -116,7 +116,18 @@ function main ()
 	local varnish_varnishncsa_options
 	local verbose="false"
 
-	if [[ ${verbose} == true ]]
+	while [[ "${#}" -gt 0 ]]
+	do
+		case "${1}" in
+			-v|--verbose)
+				verbose="true"
+				shift 1
+				;;
+		esac
+	done
+
+	if [[ ${verbose} == true ]] \
+		&& [[ ! -f ${prerequisite_state_file} ]]
 	then
 		printf -- \
 			'INFO: %s waiting on %s\n' \
@@ -145,16 +156,6 @@ function main ()
 			"${prerequisite_state_file##*/}"
 		exit 1
 	fi
-
-	while [[ "${#}" -gt 0 ]]
-	do
-		case "${1}" in
-			-v|--verbose)
-				verbose="true"
-				shift 1
-				;;
-		esac
-	done
 
 	if [[ -e ${lock_file} ]]
 	then
