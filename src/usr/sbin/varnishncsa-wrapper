@@ -129,7 +129,7 @@ function main ()
 	do
 		if ! inotifywait -qq \
 			-e "create" \
-			-t "${bootstrap_timeout}" \
+			-t "${prerequisite_timeout}" \
 			"${prerequisite_state_file%/*}"
 		then
 			break
