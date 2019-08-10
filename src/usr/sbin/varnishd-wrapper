@@ -353,7 +353,7 @@ function __set_varnish_vcl_conf ()
 		if [[ ! ${value} =~ ${pattern_plain_text} ]]
 		then
 			>&2 printf -- \
-				'ERROR: %s invalid VCL\n'
+				'ERROR: %s invalid VCL\n' \
 				"${0##*/}"
 			exit 1
 		fi
