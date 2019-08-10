@@ -4,10 +4,7 @@ set -e
 
 function __cleanup ()
 {
-	if [[ -e ${lock_file} ]]
-	then
-		rm -f "${lock_file}"
-	fi
+	__delete_lock
 }
 
 function __create_lock ()
@@ -23,6 +20,14 @@ function __create_state ()
 	if [[ -n ${state_file} ]]
 	then
 		touch "${state_file}"
+	fi
+}
+
+function __delete_lock ()
+{
+	if [[ -f ${lock_file} ]]
+	then
+		rm -f "${lock_file}"
 	fi
 }
 
@@ -434,6 +439,10 @@ function main ()
 		INT TERM EXIT
 	__create_lock
 
+	proxy="$(
+		__get_proxy
+	)"
+
 	if [[ ${verbose} == true ]] \
 		&& [[ ! -f ${state_file} ]]
 	then
@@ -474,9 +483,6 @@ function main ()
 				"${varnish_thread_timeout}" \
 				"${varnish_options}"
 		)"
-		proxy="$(
-			__get_proxy
-		)"
 
 		timer_total="$(
 			__get_timer_total \
@@ -503,9 +509,6 @@ function main ()
 	else
 		options="$(
 			__get_options
-		)"
-		proxy="$(
-			__get_proxy
 		)"
 	fi
 
