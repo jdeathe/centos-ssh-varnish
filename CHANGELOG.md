@@ -15,6 +15,7 @@ Summary of release changes.
 - Updates varnishd supervisord configuration file/priority to `80-varnishd-wrapper.conf`/`80`.
 - Updates varnishncsa supervisord configuration file/priority to `50-varnishncsa-wrapper.conf`/`50`.
 - Updates docker-compose example with redis session store replacing memcached for the apache-php service.
+- Updates wrapper scripts timer to use UTC date timestamps.
 - Fixes docker host connection status check in Makefile.
 - Fixes error when restarting/reloading varnishd.
 - Adds `inspect`, `reload` and `top` Makefile targets.
