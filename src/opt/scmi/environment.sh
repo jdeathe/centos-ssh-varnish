@@ -28,7 +28,6 @@ ULIMIT_MEMLOCK="${ULIMIT_MEMLOCK:-82000}"
 ULIMIT_NOFILE="${ULIMIT_NOFILE:-131072}"
 ULIMIT_NPROC="${ULIMIT_NPROC:-9223372036854775807}"
 
-
 # ------------------------------------------------------------------------------
 # Application container configuration
 # ------------------------------------------------------------------------------
