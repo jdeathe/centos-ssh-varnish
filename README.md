@@ -78,7 +78,7 @@ $ docker stop varnish.1 && \
   jdeathe/centos-ssh-varnish:2.3.0
 ```
 
-#### Environment Variables
+#### Environment variables
 
 There are several environmental variables defined at runtime which allows the operator to customise the running container. This may become necessary under special circumstances and the following show those that are most likely to be considered for review, the rest should be left unaltered and for clarification refer to the [varnishd documentation](https://www.varnish-cache.org/docs/6.0/index.html).
 
