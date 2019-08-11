@@ -810,7 +810,7 @@ function test_custom_configuration ()
 			docker run \
 				--detach \
 				--name varnish.1 \
-				--env VARNISH_AUTOSTART_VARNISHD_WRAPPER=false \
+				--env ENABLE_VARNISHD_WRAPPER=false \
 				--network ${backend_network} \
 				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
 				--publish ${DOCKER_PORT_MAP_TCP_8443}:8443 \
@@ -840,7 +840,7 @@ function test_custom_configuration ()
 			docker run \
 				--detach \
 				--name varnish.1 \
-				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
+				--env ENABLE_VARNISHNCSA_WRAPPER=true \
 				--network ${backend_network} \
 				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
 				--publish ${DOCKER_PORT_MAP_TCP_8443}:8443 \
@@ -883,7 +883,7 @@ function test_custom_configuration ()
 			docker run \
 				--detach \
 				--name varnish.1 \
-				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
+				--env ENABLE_VARNISHNCSA_WRAPPER=true \
 				--network ${backend_network} \
 				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
 				--publish ${DOCKER_PORT_MAP_TCP_8443}:8443 \
@@ -942,7 +942,7 @@ function test_custom_configuration ()
 			docker run \
 				--detach \
 				--name varnish.1 \
-				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
+				--env ENABLE_VARNISHNCSA_WRAPPER=true \
 				--env VARNISH_VARNISHNCSA_FORMAT="%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\" %{Varnish:hitmiss}x" \
 				--network ${backend_network} \
 				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
@@ -1123,7 +1123,7 @@ function test_healthcheck ()
 			docker run \
 				--detach \
 				--name varnish.1 \
-				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=true \
+				--env ENABLE_VARNISHNCSA_WRAPPER=true \
 				--network ${backend_network} \
 				jdeathe/centos-ssh-varnish:latest \
 			&> /dev/null
@@ -1182,8 +1182,8 @@ function test_healthcheck ()
 			docker run \
 				--detach \
 				--name varnish.1 \
-				--env VARNISH_AUTOSTART_VARNISHD_WRAPPER=false \
-				--env VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER=false \
+				--env ENABLE_VARNISHD_WRAPPER=false \
+				--env ENABLE_VARNISHNCSA_WRAPPER=false \
 				--network ${backend_network} \
 				jdeathe/centos-ssh-varnish:latest \
 			&> /dev/null
