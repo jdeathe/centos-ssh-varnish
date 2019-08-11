@@ -5,8 +5,6 @@
 
 ## Overview
 
-Apache PHP web server, loading only a minimal set of Apache modules by default.
-
 This build uses the base image [jdeathe/centos-ssh](https://github.com/jdeathe/centos-ssh) so inherits it's features but with `sshd` disabled by default. [Supervisor](http://supervisord.org/) is used to start the varnishd (and optionally the varnishncsa) daemon when a docker container based on this image is run.
 
 ### Image variants
