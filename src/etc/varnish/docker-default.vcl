@@ -79,6 +79,18 @@ sub vcl_recv {
 		return (synth(403));
 	}
 
+	if (req.url ~ "(?i)^/status(\?.*)?$") {
+		if (!std.healthy(req.backend_hint)) {
+			return (synth(503, "Service Unavailable"));
+		} else {
+			return (synth(200, "OK"));
+		}
+	}
+
+	if (req.url ~ "(?i)^/varnish-status(\?.*)?$") {
+		return (synth(200, "OK"));
+	}
+
 	if (std.healthy(req.backend_hint)) {
 		# Cap grace period for healthy backends
 		set req.grace = 15s;
@@ -124,7 +136,8 @@ sub vcl_synth {
 		# Respond with simple text error for static assets.
 		set resp.body = resp.status + " " + resp.reason;
 		set resp.http.Content-Type = "text/plain; charset=utf-8";
-	} else if (req.url ~ "(?i)^/status\.php(\?.*)?$") {
+	} else if (req.url ~ "(?i)^/status\.php(\?.*)?$" ||
+		req.url ~ "(?i)^/(?:varnish-status|status)(\?.*)?$") {
 		# Respond with simple text error for status uri.
 		set resp.body = resp.reason;
 		set resp.http.Cache-Control = "no-store";
@@ -201,7 +214,8 @@ sub vcl_backend_error {
 		# Respond with simple text error for static assets.
 		set beresp.body = beresp.status + " " + beresp.reason;
 		set beresp.http.Content-Type = "text/plain; charset=utf-8";
-	} else if (bereq.url ~ "(?i)^/status\.php(\?.*)?$") {
+	} else if (bereq.url ~ "(?i)^/status\.php(\?.*)?$" ||
+		bereq.url ~ "(?i)^/(?:varnish-status|status)(\?.*)?$") {
 		# Respond with simple text error for status uri.
 		set beresp.body = beresp.reason;
 		set beresp.http.Cache-Control = "no-store";

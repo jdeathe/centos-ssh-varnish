@@ -23,6 +23,7 @@ Summary of release changes.
 - Adds `SYSTEM_TIMEZONE` handling to Makefile, scmi, systemd unit and docker-compose templates.
 - Adds system time zone validation to healthcheck.
 - Adds lock/state file to wrapper scripts.
+- Adds VCL to handle `/status` and `/varnish-status` for monitoring the backend and varnish respectively.
 - Removes `VARNISH_AUTOSTART_VARNISHD_WRAPPER`, replaced with `ENABLE_VARNISHD_WRAPPER`.
 - Removes `VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER`, replaced with `ENABLE_VARNISHNCSA_WRAPPER`.
 - Removes support for long image tags (i.e. centos-7-2.x.x).
