@@ -78,6 +78,14 @@ sub vcl_recv {
 		# Reject unexpected ports
 		return (synth(403));
 	}
+
+	# Handle monitoring status endpoints /status and /varnish-status
+	if (req.url ~ "(?i)^/status(\?.*)?$" &&
+		!std.healthy(req.backend_hint)) {
+		return (synth(503, "Service Unavailable"));
+	} else if (req.url ~ "(?i)^/(varnish-)?status(\?.*)?$") {
+		return (synth(200, "OK"));
+	}
 }
 
 sub vcl_hash {
@@ -131,7 +139,7 @@ sub vcl_synth {
 		# Respond with simple text error for static assets.
 		set resp.http.Content-Type = "text/plain; charset=utf-8";
 		synthetic(resp.status + " " + resp.reason);
-	} else if (req.url ~ "(?i)^/status\.php(\?.*)?$") {
+	} else if (req.url ~ "(?i)^/(varnish-)?status(\.php)?(\?.*)?$") {
 		# Respond with simple text error for status uri.
 		set resp.http.Cache-Control = "no-store";
 		set resp.http.Content-Type = "text/plain; charset=utf-8";
