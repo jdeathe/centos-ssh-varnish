@@ -88,7 +88,7 @@ function __setup ()
 	local -r backend_alias="httpd_1"
 	local -r backend_name="apache-php.1"
 	local -r backend_network="bridge_t1"
-	local -r backend_release="3.1.1"
+	local -r backend_release="3.3.2"
 
 	# Create the bridge network
 	if [[ -z $(docker network ls -q -f name="${backend_network}") ]]; then
