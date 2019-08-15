@@ -162,6 +162,7 @@ function test_basic_operations ()
 	local -r backend_network="bridge_t1"
 	local container_port_80=""
 	local container_port_8443=""
+	local curl_response_code=""
 	local header_x_varnish=""
 	local phpsessid=""
 	local request_headers=""
@@ -431,6 +432,64 @@ function test_basic_operations ()
 						0
 				end
 			end
+
+			describe "Status URI"
+				it "Returns OK."
+					curl -s \
+						-H "Host: ${backend_hostname}" \
+						http://127.0.0.1:${container_port_80}/status \
+					| grep -q 'OK'
+
+					request_response="${?}"
+
+					assert equal \
+						"${request_response}" \
+						0
+				end
+
+				it "Returns a 200 status code."
+					curl_response_code="$(
+						curl -s \
+							-o /dev/null \
+							-w "%{http_code}" \
+							--header "Host: ${backend_hostname}" \
+							http://127.0.0.1:${container_port_80}/status
+					)"
+
+					assert equal \
+						"${curl_response_code}" \
+						"200"
+				end
+			end
+
+			describe "Varnish status URI"
+				it "Returns OK."
+					curl -s \
+						-H "Host: ${backend_hostname}" \
+						http://127.0.0.1:${container_port_80}/varnish-status \
+					| grep -q 'OK'
+
+					request_response="${?}"
+
+					assert equal \
+						"${request_response}" \
+						0
+				end
+
+				it "Returns a 200 status code."
+					curl_response_code="$(
+						curl -s \
+							-o /dev/null \
+							-w "%{http_code}" \
+							--header "Host: ${backend_hostname}" \
+							http://127.0.0.1:${container_port_80}/varnish-status
+					)"
+
+					assert equal \
+						"${curl_response_code}" \
+						"200"
+				end
+			end
 		end
 
 		describe "Response to PROXY protocol requests"
@@ -590,12 +649,12 @@ function test_basic_operations ()
 		end
 
 		describe "Backend offline"
+			docker pause \
+				${backend_name} \
+			&> /dev/null
+
 			describe "HTTP request"
 				it "Has a cache hit."
-					docker stop \
-						${backend_name} \
-					&> /dev/null
-
 					curl -s \
 						-H "Host: ${backend_hostname}" \
 						http://127.0.0.1:${container_port_80}/ \
@@ -622,15 +681,76 @@ function test_basic_operations ()
 
 					request_response="${?}"
 
-					docker start \
-						${backend_name} \
-					&> /dev/null
-
 					assert equal \
 						"${request_response}" \
 						0
 				end
 			end
+
+			# Wait for probe to register backend as down.
+			sleep 20
+
+			describe "Status URI"
+				it "Returns Service Unavailable."
+					curl -s \
+						-H "Host: ${backend_hostname}" \
+						http://127.0.0.1:${container_port_80}/status \
+					| grep -q 'Service Unavailable'
+
+					request_response="${?}"
+
+					assert equal \
+						"${request_response}" \
+						0
+				end
+
+				it "Returns a 503 status code."
+					curl_response_code="$(
+						curl -s \
+							-o /dev/null \
+							-w "%{http_code}" \
+							--header "Host: ${backend_hostname}" \
+							http://127.0.0.1:${container_port_80}/status
+					)"
+
+					assert equal \
+						"${curl_response_code}" \
+						"503"
+				end
+			end
+
+			describe "Varnish status URI"
+				it "Returns OK."
+					curl -s \
+						-H "Host: ${backend_hostname}" \
+						http://127.0.0.1:${container_port_80}/varnish-status \
+					| grep -q 'OK'
+
+					request_response="${?}"
+
+					assert equal \
+						"${request_response}" \
+						0
+				end
+
+				it "Returns a 200 status code."
+					curl_response_code="$(
+						curl -s \
+							-o /dev/null \
+							-w "%{http_code}" \
+							--header "Host: ${backend_hostname}" \
+							http://127.0.0.1:${container_port_80}/varnish-status
+					)"
+
+					assert equal \
+						"${curl_response_code}" \
+						"200"
+				end
+			end
+
+			docker unpause \
+				${backend_name} \
+			&> /dev/null
 		end
 
 		__terminate_container \
