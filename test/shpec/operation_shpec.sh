@@ -109,7 +109,7 @@ function __setup ()
 		--network ${backend_network} \
 		--network-alias ${backend_alias} \
 		--volume ${PWD}/test/fixture/apache/var/www/public_html:/opt/app/public_html:ro \
-		jdeathe/centos-ssh-apache-php-fcgi:${backend_release} \
+		jdeathe/centos-ssh-apache-php:${backend_release} \
 	&> /dev/null
 }
 
