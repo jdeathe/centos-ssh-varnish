@@ -925,6 +925,7 @@ function test_custom_configuration ()
 			docker logs \
 				--tail 3 \
 				varnish.1 \
+				2> /dev/null \
 			| grep -qE \
 				"^.+ .+ .+ \[.+\] \"GET (http:\/\/${backend_hostname})?/ HTTP/1\.1\" 200 .+ \".+\" \".*\"\$" \
 			&> /dev/null
@@ -985,6 +986,7 @@ function test_custom_configuration ()
 			docker logs \
 				--tail 3 \
 				varnish.1 \
+				2> /dev/null \
 			| grep -qE \
 				"^.+ .+ .+ \[.+\] \"GET (http:\/\/${backend_hostname})?/ HTTP/1\.1\" 200 .+ \".+\" \".*\" (hit|miss)+\$" \
 			&> /dev/null
