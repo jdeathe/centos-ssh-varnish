@@ -688,7 +688,7 @@ function test_basic_operations ()
 			end
 
 			# Wait for probe to register backend as down.
-			sleep 20
+			sleep 30
 
 			describe "Status URI"
 				it "Returns Service Unavailable."
