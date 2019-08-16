@@ -1007,6 +1007,7 @@ function test_custom_configuration ()
 				--network ${backend_network} \
 				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
 				--publish ${DOCKER_PORT_MAP_TCP_8443}:8443 \
+				--health-interval 30 \
 				jdeathe/centos-ssh-varnish:latest \
 			&> /dev/null
 
@@ -1040,7 +1041,7 @@ function test_custom_configuration ()
 				http://127.0.0.1:${container_port_80}/ \
 			&> /dev/null
 
-			sleep 4
+			sleep 2
 
 			docker logs \
 				--tail 1 \
@@ -1068,6 +1069,7 @@ function test_custom_configuration ()
 				--network ${backend_network} \
 				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
 				--publish ${DOCKER_PORT_MAP_TCP_8443}:8443 \
+				--health-interval 30 \
 				jdeathe/centos-ssh-varnish:latest \
 			&> /dev/null
 
@@ -1101,7 +1103,7 @@ function test_custom_configuration ()
 				http://127.0.0.1:${container_port_80}/ \
 			&> /dev/null
 
-			sleep 4
+			sleep 2
 
 			docker logs \
 				--tail 1 \
