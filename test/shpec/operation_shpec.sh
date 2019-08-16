@@ -1040,7 +1040,7 @@ function test_custom_configuration ()
 				http://127.0.0.1:${container_port_80}/ \
 			&> /dev/null
 
-			sleep 2
+			sleep 4
 
 			docker logs \
 				--tail 3 \
@@ -1101,7 +1101,7 @@ function test_custom_configuration ()
 				http://127.0.0.1:${container_port_80}/ \
 			&> /dev/null
 
-			sleep 2
+			sleep 4
 
 			docker logs \
 				--tail 3 \
