@@ -1007,7 +1007,7 @@ function test_custom_configuration ()
 				--network ${backend_network} \
 				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
 				--publish ${DOCKER_PORT_MAP_TCP_8443}:8443 \
-				--health-interval 30 \
+				--health-interval 30s \
 				jdeathe/centos-ssh-varnish:latest \
 			&> /dev/null
 
@@ -1069,7 +1069,7 @@ function test_custom_configuration ()
 				--network ${backend_network} \
 				--publish ${DOCKER_PORT_MAP_TCP_80}:80 \
 				--publish ${DOCKER_PORT_MAP_TCP_8443}:8443 \
-				--health-interval 30 \
+				--health-interval 30s \
 				jdeathe/centos-ssh-varnish:latest \
 			&> /dev/null
 
