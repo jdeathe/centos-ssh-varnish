@@ -1,10 +1,33 @@
 # Change Log
 
-## centos-7
+## 2 - centos-7
 
-Summary of release changes for Version 2.
+Summary of release changes.
 
-CentOS-7 7.5.1804 x86_64 - Varnish Cache 6.2.
+### 2.4.0 - 2019-08-17
+
+- Updates source image to [2.6.0](https://github.com/jdeathe/centos-ssh/releases/tag/2.6.0).
+- Updates CHANGELOG.md to simplify maintenance.
+- Updates README.md to simplify contents and improve readability.
+- Updates README-short.txt to apply to all image variants.
+- Updates Dockerfile `org.deathe.description` metadata LABEL for consistency.
+- Updates supervisord configuration to send error log output to stderr.
+- Updates varnishd supervisord configuration file/priority to `80-varnishd-wrapper.conf`/`80`.
+- Updates varnishncsa supervisord configuration file/priority to `50-varnishncsa-wrapper.conf`/`50`.
+- Updates docker-compose example with redis session store replacing memcached for the apache-php service.
+- Updates wrapper scripts timer to use UTC date timestamps.
+- Updates backend probe window from 5 to 3 to reduce time to register an offline backend.
+- Fixes docker host connection status check in Makefile.
+- Fixes error when restarting/reloading varnishd.
+- Adds `inspect`, `reload` and `top` Makefile targets.
+- Adds improved `clean` Makefile target; includes exited containers and dangling images.
+- Adds `SYSTEM_TIMEZONE` handling to Makefile, scmi, systemd unit and docker-compose templates.
+- Adds system time zone validation to healthcheck.
+- Adds lock/state file to wrapper scripts.
+- Adds VCL to handle `/status` and `/varnish-status` for monitoring the backend and varnish respectively.
+- Removes `VARNISH_AUTOSTART_VARNISHD_WRAPPER`, replaced with `ENABLE_VARNISHD_WRAPPER`.
+- Removes `VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER`, replaced with `ENABLE_VARNISHNCSA_WRAPPER`.
+- Removes support for long image tags (i.e. centos-7-2.x.x).
 
 ### 2.3.0 - 2019-05-06
 

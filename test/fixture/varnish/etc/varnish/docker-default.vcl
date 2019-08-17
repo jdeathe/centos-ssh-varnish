@@ -9,7 +9,7 @@ import std;
 probe healthcheck {
 	.interval = 5s;
 	.timeout = 2s;
-	.window = 5;
+	.window = 3;
 	.threshold = 3;
 	.initial = 2;
 	.expected_response = 200;
@@ -72,10 +72,19 @@ sub vcl_recv {
 		std.port(local.ip) == 80) {
 		# Port 80
 		set req.http.X-Forwarded-Port = "80";
+		set req.http.X-Forwarded-Proto = "http";
 		set req.backend_hint = director_http.backend();
 	} else {
 		# Reject unexpected ports
 		return (synth(403));
+	}
+
+	# Handle monitoring status endpoints /status and /varnish-status
+	if (req.url ~ "(?i)^/status(\?.*)?$" &&
+		!std.healthy(req.backend_hint)) {
+		return (synth(503, "Service Unavailable"));
+	} else if (req.url ~ "(?i)^/(varnish-)?status(\?.*)?$") {
+		return (synth(200, "OK"));
 	}
 
 	if (std.healthy(req.backend_hint)) {
@@ -127,7 +136,7 @@ sub vcl_synth {
 		# Respond with simple text error for static assets.
 		set resp.body = resp.status + " " + resp.reason;
 		set resp.http.Content-Type = "text/plain; charset=utf-8";
-	} else if (req.url ~ "(?i)^/status\.php(\?.*)?$") {
+	} else if (req.url ~ "(?i)^/(varnish-)?status(\.php)?(\?.*)?$") {
 		# Respond with simple text error for status uri.
 		set resp.body = resp.reason;
 		set resp.http.Cache-Control = "no-store";
@@ -204,7 +213,7 @@ sub vcl_backend_error {
 		# Respond with simple text error for static assets.
 		set beresp.body = beresp.status + " " + beresp.reason;
 		set beresp.http.Content-Type = "text/plain; charset=utf-8";
-	} else if (bereq.url ~ "(?i)^/status\.php(\?.*)?$") {
+	} else if (bereq.url ~ "(?i)^/(varnish-)?status(\.php)?(\?.*)?$") {
 		# Respond with simple text error for status uri.
 		set beresp.body = beresp.reason;
 		set beresp.http.Cache-Control = "no-store";
