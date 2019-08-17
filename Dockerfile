@@ -1,6 +1,6 @@
-FROM jdeathe/centos-ssh:1.10.1
+FROM jdeathe/centos-ssh:1.11.0
 
-ARG RELEASE_VERSION="1.6.0"
+ARG RELEASE_VERSION="1.7.0"
 
 # ------------------------------------------------------------------------------
 # Base install of required packages
@@ -37,7 +37,6 @@ ADD src /
 # ------------------------------------------------------------------------------
 # Provisioning
 # - Replace placeholders with values in systemd service unit template
-# - Symbolic link varnish access log file to stdout
 # - Create directory for varnishncsa PID file
 # - Set permissions
 # ------------------------------------------------------------------------------
@@ -50,7 +49,7 @@ RUN sed -i \
 		varnishlog:varnish \
 		/var/{lib/misc,lock/subsys,run}/varnish \
 	&& chmod 644 \
-		/etc/varnish/*.vcl \
+		/etc/{supervisord.d/{50-varnishncsa-wrapper,80-varnishd-wrapper}.conf,varnish/docker-default.vcl} \
 	&& chmod 700 \
 		/usr/{bin/healthcheck,sbin/{varnishd,varnishncsa}-wrapper} \
 	&& chmod 750 \
@@ -63,11 +62,11 @@ EXPOSE 80 8443
 # ------------------------------------------------------------------------------
 # Set default environment variables
 # ------------------------------------------------------------------------------
-ENV SSH_AUTOSTART_SSHD="false" \
-	SSH_AUTOSTART_SSHD_BOOTSTRAP="false" \
-	SSH_AUTOSTART_SUPERVISOR_STDOUT="false" \
-	VARNISH_AUTOSTART_VARNISHD_WRAPPER="true" \
-	VARNISH_AUTOSTART_VARNISHNCSA_WRAPPER="false" \
+ENV \
+	ENABLE_SSHD_BOOTSTRAP="false" \
+	ENABLE_SSHD_WRAPPER="false" \
+	ENABLE_VARNISHD_WRAPPER="true" \
+	ENABLE_VARNISHNCSA_WRAPPER="false" \
 	VARNISH_MAX_THREADS="1000" \
 	VARNISH_MIN_THREADS="50" \
 	VARNISH_OPTIONS="" \
@@ -107,7 +106,7 @@ jdeathe/centos-ssh-varnish:${RELEASE_VERSION} \
 	org.deathe.license="MIT" \
 	org.deathe.vendor="jdeathe" \
 	org.deathe.url="https://github.com/jdeathe/centos-ssh-varnish" \
-	org.deathe.description="CentOS-6 6.10 x86_64 - Varnish Cache 4.1."
+	org.deathe.description="Varnish Cache 4.1 - CentOS-6 6.10 x86_64."
 
 HEALTHCHECK \
 	--interval=1s \
