@@ -1,7 +1,7 @@
 ### Tags and respective `Dockerfile` links
 
-- `centos-7`, `2.4.0` [(centos-7/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-7/Dockerfile)
-- `centos-6`, `1.7.0` [(centos-6/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/Dockerfile)
+- [`2.4.0`](https://github.com/jdeathe/centos-ssh-varnish/releases/tag/2.4.0), `centos-7` [(centos-7/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-7/Dockerfile)
+- [`1.7.0`](https://github.com/jdeathe/centos-ssh-varnish/releases/tag/1.7.0), `centos-6` [(centos-6/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/Dockerfile)
 
 ## Overview
 
