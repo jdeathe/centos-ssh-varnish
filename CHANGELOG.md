@@ -6,6 +6,7 @@ Summary of release changes.
 
 ### 2.4.1 - Unreleased
 
+- Updates Varnish to [6.2.1](https://github.com/varnishcache/varnish-cache/blob/varnish-6.2.1/doc/changes.rst).
 - Updates `gcc` package to 4.8.5-39.
 - Updates startsecs for `varnishncsa-wrapper` to 5 seconds.
 
