@@ -4,6 +4,10 @@
 
 Summary of release changes.
 
+### 1.7.1 - Unreleased
+
+- Updates startsecs for `varnishncsa-wrapper` to 5 seconds.
+
 ### 1.7.0 - 2019-08-17
 
 - Updates source image to [1.11.0](https://github.com/jdeathe/centos-ssh/releases/tag/1.11.0).
