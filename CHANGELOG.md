@@ -4,6 +4,11 @@
 
 Summary of release changes.
 
+### 2.4.1 - Unreleased
+
+- Updates `gcc` package to 4.8.5-39.
+- Updates startsecs for `varnishncsa-wrapper` to 5 seconds.
+
 ### 2.4.0 - 2019-08-17
 
 - Updates source image to [2.6.0](https://github.com/jdeathe/centos-ssh/releases/tag/2.6.0).
