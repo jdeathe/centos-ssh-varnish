@@ -4,6 +4,20 @@
 
 Summary of release changes.
 
+### 1.7.1 - 2019-10-08
+
+- Deprecate Makefile target `logs-delayed`; replaced with `logsdef`.
+- Updates startsecs for `varnishncsa-wrapper` to 5 seconds.
+- Updates `test/health_status` helper script with for consistency.
+- Updates Makefile target `logs` to accept `[OPTIONS]` (e.g `make -- logs -ft`).
+- Updates info/error output for consistency.
+- Updates healthcheck failure messages to remove EOL character that is rendered in status response.
+- Updates ordering of Tags and respective Dockerfile links in README.md for readability.
+- Adds improved test workflow; added `test-setup` target to Makefile.
+- Adds Makefile target `logsdef` to handle deferred logs output within a target chain.
+- Adds `/docs` directory for supplementary documentation and simplify README.
+- Fixes validation failure of 0 second --timeout value in `test/health_status`.
+
 ### 1.7.0 - 2019-08-17
 
 - Updates source image to [1.11.0](https://github.com/jdeathe/centos-ssh/releases/tag/1.11.0).
