@@ -4,7 +4,7 @@
 
 Summary of release changes.
 
-### 2.4.1 - Unreleased
+### 2.4.1 - 2019-10-08
 
 - Deprecate Makefile target `logs-delayed`; replaced with `logsdef`.
 - Updates Varnish to [6.2.1](https://github.com/varnishcache/varnish-cache/blob/varnish-6.2.1/doc/changes.rst).
