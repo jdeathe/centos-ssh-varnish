@@ -4,7 +4,7 @@
 
 Summary of release changes.
 
-### 1.7.1 - Unreleased
+### 1.7.1 - 2019-10-08
 
 - Deprecate Makefile target `logs-delayed`; replaced with `logsdef`.
 - Updates startsecs for `varnishncsa-wrapper` to 5 seconds.
