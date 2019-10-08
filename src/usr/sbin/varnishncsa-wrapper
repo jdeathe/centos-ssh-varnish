@@ -171,7 +171,7 @@ function main ()
 	fi
 
 	trap "__cleanup" \
-		INT TERM EXIT
+		EXIT INT TERM
 	__create_lock
 
 	proxy="$(
@@ -220,7 +220,7 @@ function main ()
 	__create_state
 	__cleanup
 	trap - \
-		INT TERM EXIT
+		EXIT INT TERM
 
 	if [[ ${verbose} == true ]]
 	then
