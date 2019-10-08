@@ -1,6 +1,6 @@
-FROM jdeathe/centos-ssh:2.6.0
+FROM jdeathe/centos-ssh:2.6.1
 
-ARG RELEASE_VERSION="2.4.0"
+ARG RELEASE_VERSION="2.4.1"
 
 # ------------------------------------------------------------------------------
 # Base install of required packages
@@ -21,8 +21,8 @@ RUN { printf -- \
 	&& yum -y install \
 		--setopt=tsflags=nodocs \
 		--disableplugin=fastestmirror \
-		gcc-4.8.5-36.el7_6.1 \
-		varnish-6.2.0-1.el7 \
+		gcc-4.8.5-39.el7 \
+		varnish-6.2.1-1.el7 \
 	&& yum versionlock add \
 		varnish \
 		gcc \

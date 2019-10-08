@@ -47,16 +47,16 @@ function main ()
 		| grep -qE '^/usr/bin/python /usr/bin/supervisord'
 	then
 		>&2 printf -- \
-			'%s\n' \
-			"supervisord not running."
+			'%s' \
+			"supervisord not running"
 		exit 1
 	fi
 
 	if [[ ${system_timezone} != "${zone}" ]]
 	then
 		>&2 printf -- \
-			'%s\n' \
-			"system-timezone zone mismatch."
+			'%s' \
+			"system-timezone zone mismatch"
 		exit 1
 	fi
 
@@ -71,8 +71,8 @@ function main ()
 		| grep -qE '^/usr/sbin/varnishd '
 	then
 		>&2 printf -- \
-			'%s\n' \
-			"varnishd not running."
+			'%s' \
+			"varnishd not running"
 		exit 1
 	fi
 
@@ -81,8 +81,8 @@ function main ()
 		&> /dev/null
 	then
 		>&2 printf -- \
-			'%s\n' \
-			"varnishd not booted."
+			'%s' \
+			"varnishd not booted"
 		exit 1
 	fi
 
@@ -91,8 +91,8 @@ function main ()
 		| grep -qE '^/usr/bin/varnishncsa '
 	then
 		>&2 printf -- \
-			'%s\n' \
-			"varnishncsa not running."
+			'%s' \
+			"varnishncsa not running"
 		exit 1
 	fi
 }
