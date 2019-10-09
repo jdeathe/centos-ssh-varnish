@@ -4,6 +4,10 @@
 
 Summary of release changes.
 
+### 1.7.2 - Unreleased
+
+- Updates image tags in docker-compose example configuration.
+
 ### 1.7.1 - 2019-10-08
 
 - Deprecate Makefile target `logs-delayed`; replaced with `logsdef`.
