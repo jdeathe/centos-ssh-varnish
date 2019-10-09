@@ -9,7 +9,7 @@ This build uses the base image [jdeathe/centos-ssh](https://github.com/jdeathe/c
 
 ### Image variants
 
-- [Varnish Cache 6.2 - CentOS-7](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-7)
+- [Varnish Cache 6.3 - CentOS-7](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-7)
 - [Varnish Cache 4.1 - CentOS-6](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6)
 
 ## Quick start
@@ -78,7 +78,7 @@ $ docker stop varnish.1 && \
 
 #### Environment variables
 
-There are several environmental variables defined at runtime which allows the operator to customise the running container. This may become necessary under special circumstances and the following show those that are most likely to be considered for review, the rest should be left unaltered and for clarification refer to the [varnishd documentation](https://www.varnish-cache.org/docs/6.0/index.html).
+There are several environmental variables defined at runtime which allows the operator to customise the running container. This may become necessary under special circumstances and the following show those that are most likely to be considered for review, the rest should be left unaltered and for clarification refer to the [varnishd documentation](https://www.varnish-cache.org/docs/6.3/index.html).
 
 ##### ENABLE_VARNISHD_WRAPPER
 
@@ -98,7 +98,7 @@ Use `VARNISH_OPTIONS` to set other `varnishd` options.
 
 ##### VARNISH_STORAGE
 
-Use `VARNISH_STORAGE` to specify the storage backend. See the [varnishd documentation](https://varnish-cache.org/docs/6.0/reference/varnishd.html#storage-backend) for the types and parameters available. The default is a file type backend but it is recommended to use malloc if there is enough RAM available.
+Use `VARNISH_STORAGE` to specify the storage backend. See the [varnishd documentation](https://varnish-cache.org/docs/6.3/reference/varnishd.html#storage-backend) for the types and parameters available. The default is a file type backend but it is recommended to use malloc if there is enough RAM available.
 
 ##### VARNISH_TTL
 
@@ -106,7 +106,7 @@ The `VARNISH_TTL` can be used to set a hard minimum time to live for cached docu
 
 ##### VARNISH_VARNISHNCSA_FORMAT
 
-When `ENABLE_VARNISHNCSA_WRAPPER` is set to `true` then `VARNISH_VARNISHNCSA_FORMAT` can be used to set the output log [format string](https://varnish-cache.org/docs/6.0/reference/varnishncsa.html#format).
+When `ENABLE_VARNISHNCSA_WRAPPER` is set to `true` then `VARNISH_VARNISHNCSA_FORMAT` can be used to set the output log [format string](https://varnish-cache.org/docs/6.3/reference/varnishncsa.html#format).
 
 ##### VARNISH_VARNISHNCSA_OPTIONS
 
