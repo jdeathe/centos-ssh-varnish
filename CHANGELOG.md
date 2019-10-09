@@ -4,6 +4,10 @@
 
 Summary of release changes.
 
+### 2.5.0 - Unreleased
+
+- Updates image tags in docker-compose example configuration.
+
 ### 2.4.1 - 2019-10-08
 
 - Deprecate Makefile target `logs-delayed`; replaced with `logsdef`.
