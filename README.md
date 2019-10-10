@@ -1,6 +1,6 @@
 ### Tags and respective `Dockerfile` links
 
-- [`2.4.1`](https://github.com/jdeathe/centos-ssh-varnish/releases/tag/2.4.1), `centos-7` [(centos-7/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-7/Dockerfile)
+- [`2.5.0`](https://github.com/jdeathe/centos-ssh-varnish/releases/tag/2.5.0), `centos-7` [(centos-7/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-7/Dockerfile)
 - [`1.7.1`](https://github.com/jdeathe/centos-ssh-varnish/releases/tag/1.7.1), `centos-6` [(centos-6/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/Dockerfile)
 
 ## Overview
@@ -9,7 +9,7 @@ This build uses the base image [jdeathe/centos-ssh](https://github.com/jdeathe/c
 
 ### Image variants
 
-- [Varnish Cache 6.2 - CentOS-7](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-7)
+- [Varnish Cache 6.3 - CentOS-7](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-7)
 - [Varnish Cache 4.1 - CentOS-6](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6)
 
 ## Quick start
@@ -26,7 +26,7 @@ $ docker run -d -t \
   -p 80:80 \
   --sysctl "net.core.somaxconn=1024" \
   --add-host httpd_1:172.17.8.101 \
-  jdeathe/centos-ssh-varnish:2.4.1
+  jdeathe/centos-ssh-varnish:2.5.0
 ```
 
 Verify the named container's process status and health.
@@ -73,12 +73,12 @@ $ docker stop varnish.1 && \
   --env "VARNISH_MAX_THREADS=2000" \
   --env "VARNISH_MIN_THREADS=100" \
   --add-host httpd_1:172.17.8.101 \
-  jdeathe/centos-ssh-varnish:2.4.1
+  jdeathe/centos-ssh-varnish:2.5.0
 ```
 
 #### Environment variables
 
-There are several environmental variables defined at runtime which allows the operator to customise the running container. This may become necessary under special circumstances and the following show those that are most likely to be considered for review, the rest should be left unaltered and for clarification refer to the [varnishd documentation](https://www.varnish-cache.org/docs/6.0/index.html).
+There are several environmental variables defined at runtime which allows the operator to customise the running container. This may become necessary under special circumstances and the following show those that are most likely to be considered for review, the rest should be left unaltered and for clarification refer to the [varnishd documentation](https://www.varnish-cache.org/docs/6.3/index.html).
 
 ##### ENABLE_VARNISHD_WRAPPER
 
@@ -98,7 +98,7 @@ Use `VARNISH_OPTIONS` to set other `varnishd` options.
 
 ##### VARNISH_STORAGE
 
-Use `VARNISH_STORAGE` to specify the storage backend. See the [varnishd documentation](https://varnish-cache.org/docs/6.0/reference/varnishd.html#storage-backend) for the types and parameters available. The default is a file type backend but it is recommended to use malloc if there is enough RAM available.
+Use `VARNISH_STORAGE` to specify the storage backend. See the [varnishd documentation](https://varnish-cache.org/docs/6.3/reference/varnishd.html#storage-backend) for the types and parameters available. The default is a file type backend but it is recommended to use malloc if there is enough RAM available.
 
 ##### VARNISH_TTL
 
@@ -106,7 +106,7 @@ The `VARNISH_TTL` can be used to set a hard minimum time to live for cached docu
 
 ##### VARNISH_VARNISHNCSA_FORMAT
 
-When `ENABLE_VARNISHNCSA_WRAPPER` is set to `true` then `VARNISH_VARNISHNCSA_FORMAT` can be used to set the output log [format string](https://varnish-cache.org/docs/6.0/reference/varnishncsa.html#format).
+When `ENABLE_VARNISHNCSA_WRAPPER` is set to `true` then `VARNISH_VARNISHNCSA_FORMAT` can be used to set the output log [format string](https://varnish-cache.org/docs/6.3/reference/varnishncsa.html#format).
 
 ##### VARNISH_VARNISHNCSA_OPTIONS
 
