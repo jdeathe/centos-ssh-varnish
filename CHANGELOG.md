@@ -4,7 +4,7 @@
 
 Summary of release changes.
 
-### 2.5.0 - Unreleased
+### 2.5.0 - 2019-10-10
 
 - Updates Varnish to [6.3.0](https://github.com/varnishcache/varnish-cache/blob/varnish-6.3.0/doc/changes.rst).
 - Updates image tags in docker-compose example configuration.

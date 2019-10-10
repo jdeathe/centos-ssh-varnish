@@ -1,6 +1,6 @@
 ### Tags and respective `Dockerfile` links
 
-- [`2.4.1`](https://github.com/jdeathe/centos-ssh-varnish/releases/tag/2.4.1), `centos-7` [(centos-7/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-7/Dockerfile)
+- [`2.5.0`](https://github.com/jdeathe/centos-ssh-varnish/releases/tag/2.5.0), `centos-7` [(centos-7/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-7/Dockerfile)
 - [`1.7.1`](https://github.com/jdeathe/centos-ssh-varnish/releases/tag/1.7.1), `centos-6` [(centos-6/Dockerfile)](https://github.com/jdeathe/centos-ssh-varnish/blob/centos-6/Dockerfile)
 
 ## Overview
@@ -26,7 +26,7 @@ $ docker run -d -t \
   -p 80:80 \
   --sysctl "net.core.somaxconn=1024" \
   --add-host httpd_1:172.17.8.101 \
-  jdeathe/centos-ssh-varnish:2.4.1
+  jdeathe/centos-ssh-varnish:2.5.0
 ```
 
 Verify the named container's process status and health.
@@ -73,7 +73,7 @@ $ docker stop varnish.1 && \
   --env "VARNISH_MAX_THREADS=2000" \
   --env "VARNISH_MIN_THREADS=100" \
   --add-host httpd_1:172.17.8.101 \
-  jdeathe/centos-ssh-varnish:2.4.1
+  jdeathe/centos-ssh-varnish:2.5.0
 ```
 
 #### Environment variables
